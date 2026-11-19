@@ -1,0 +1,20 @@
+{
+  "currency": "INR",
+  "available_balance_paise": 3200000,
+  "safe_to_spend_paise": 845000,
+  "upcoming_dues_total_paise": 2000000,
+  "safety_reserve_paise": 355000,
+  "calculated_until": "2026-11-25",
+  "next_due": {
+    "id": "due_001",
+    "title": "Home EMI",
+    "amount_paise": 1200000,
+    "due_date": "2026-11-25",
+    "due_type": "emi",
+    "is_mandatory": true,
+    "confidence": 0.95
+  },
+  "explanation": "Available balance minus upcoming mandatory dues, essential expenses and reserve.",
+  "data_confidence": "high",
+  "last_updated": "2026-11-18T14:00:00+05:30"
+}

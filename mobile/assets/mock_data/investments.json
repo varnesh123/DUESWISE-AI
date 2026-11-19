@@ -1,0 +1,6 @@
+{
+  "investments": [
+    {"label": "Mock SIP (Equity)", "invested_amount_paise": 1200000, "current_value_paise": 1350000, "gain_loss_paise": 150000, "return_percent": 12.5, "asset_class": "Equity", "note": "Simulated educational data. Not a real investment."},
+    {"label": "Mock SIP (Debt)", "invested_amount_paise": 600000, "current_value_paise": 618000, "gain_loss_paise": 18000, "return_percent": 3.0, "asset_class": "Debt", "note": "Simulated educational data. Not a real investment."}
+  ]
+}

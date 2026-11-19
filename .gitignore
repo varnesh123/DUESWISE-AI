@@ -1,0 +1,51 @@
+# Flutter build artifacts
+build/
+.dart_tool/
+**/*.dart-unoptimized
+**.sys.dart
+
+# Dart/Flutter packages
+.packages
+.glide.yaml
+.lock-watcher
+
+# IDE files
+/.idea/
+/*.code-workspace
+.vscode/
+
+# Dart dev comp
+.dart_tool/
+.dart_tool/SwiftPackageManager/
+
+# Flutter Tools gen
+flutter_gen/
+
+# Security
+.env
+**.env*
+.local.env
+
+# Generated code
+gen/
+lib/src/
+
+# Common
+**/dart_sdk.dart
+**/pubspec.lock
+
+# Misc
+.dart_tool/**
+/linux_kernel/**
+/win32/**
+/macos/**
+/ios/**
+/android/
+/web/
+
+# FastAST
+**/*.ast
+
+# Token
+**/token*
+**/auth_token*

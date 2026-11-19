@@ -1,0 +1,5 @@
+{
+  "scam_alerts": [
+    {"id": "scam_001", "risk_score": 96, "risk_level": "critical", "verdict": "suspicious", "indicators": ["Suspicious external link", "Requests sensitive payment credentials"], "explanation": "Do not disclose your UPI PIN through an unsolicited link.", "status": "new"}
+  ]
+}

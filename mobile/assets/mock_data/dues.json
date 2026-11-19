@@ -1,0 +1,7 @@
+{
+  "dues": [
+    {"id": "due_001", "title": "Home EMI", "due_type": "emi", "amount_paise": 1200000, "due_date": "2026-11-25", "status": "upcoming", "is_mandatory": true, "confidence": 0.95},
+    {"id": "due_002", "title": "Internet Bill", "due_type": "utilities", "amount_paise": 200000, "due_date": "2026-11-22", "status": "upcoming", "is_mandatory": true, "confidence": 0.90},
+    {"id": "due_003", "title": "Health Insurance Premium", "due_type": "insurance", "amount_paise": 600000, "due_date": "2026-11-28", "status": "upcoming", "is_mandatory": true, "confidence": 0.85}
+  ]
+}
