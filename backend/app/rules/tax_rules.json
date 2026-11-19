@@ -1,0 +1,67 @@
+{
+  "financial_year": "FY-2025-26",
+  "rule_version": "1.0",
+  "source_reference": "Union Budget 2025-26 proposals - UNVERIFIED against Income Tax Department publications",
+  "last_verified_date": null,
+  "verification_status": "unverified",
+  "disclaimer": "This is an illustrative estimate, not professional tax advice. Verify current Income Tax Department rules. Rules are UNVERIFIED against Income Tax Department publications.",
+  "regimes": {
+    "old": {
+      "name": "Old Regime",
+      "standard_deduction_paise": 5000000,
+      "rebate_limit_paise": 1250000,
+      "rebate_max_income_paise": 5000000,
+      "cess_rate_basis_points": 400,
+      "surcharge_thresholds": [
+        {"threshold_paise": 50000000, "rate_basis_points": 1000},
+        {"threshold_paise": 100000000, "rate_basis_points": 2000},
+        {"threshold_paise": 200000000, "rate_basis_points": 2500},
+        {"threshold_paise": 500000000, "rate_basis_points": 3700}
+      ],
+      "deductions": {
+        "section_80c_paise": 15000000,
+        "section_80d_paise": 2500000,
+        "section_80ccd_1b_paise": 5000000,
+        "hra_exemption_paise": null,
+        "home_loan_interest_paise": 20000000,
+        "other_eligible_deductions_paise": 0
+      },
+      "slabs": [
+        {"min_paise": 0, "max_paise": 2500000, "rate_basis_points": 0},
+        {"min_paise": 2500000, "max_paise": 5000000, "rate_basis_points": 500},
+        {"min_paise": 5000000, "max_paise": 10000000, "rate_basis_points": 2000},
+        {"min_paise": 10000000, "max_paise": null, "rate_basis_points": 3000}
+      ]
+    },
+    "new": {
+      "name": "New Regime",
+      "standard_deduction_paise": 7500000,
+      "rebate_limit_paise": 2500000,
+      "rebate_max_income_paise": 12000000,
+      "cess_rate_basis_points": 400,
+      "surcharge_thresholds": [
+        {"threshold_paise": 50000000, "rate_basis_points": 1000},
+        {"threshold_paise": 100000000, "rate_basis_points": 2000},
+        {"threshold_paise": 200000000, "rate_basis_points": 2500},
+        {"threshold_paise": 500000000, "rate_basis_points": 3700}
+      ],
+      "deductions": {
+        "section_80c_paise": 0,
+        "section_80d_paise": 0,
+        "section_80ccd_1b_paise": 0,
+        "hra_exemption_paise": 0,
+        "home_loan_interest_paise": 0,
+        "other_eligible_deductions_paise": 0
+      },
+      "slabs": [
+        {"min_paise": 0, "max_paise": 4000000, "rate_basis_points": 0},
+        {"min_paise": 4000000, "max_paise": 8000000, "rate_basis_points": 500},
+        {"min_paise": 8000000, "max_paise": 12000000, "rate_basis_points": 1000},
+        {"min_paise": 12000000, "max_paise": 16000000, "rate_basis_points": 1500},
+        {"min_paise": 16000000, "max_paise": 20000000, "rate_basis_points": 2000},
+        {"min_paise": 20000000, "max_paise": 24000000, "rate_basis_points": 2500},
+        {"min_paise": 24000000, "max_paise": null, "rate_basis_points": 3000}
+      ]
+    }
+  }
+}

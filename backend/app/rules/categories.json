@@ -1,0 +1,17 @@
+{
+  "categories": {
+    "food": ["swiggy", "zomato", "restaurant", "cafe", "coffee", "hotel", "mess", "dominos", "pizza", "mcdonald", "burger", "food"],
+    "groceries": ["bigbasket", "grofers", "grocery", "supermarket", "reliance fresh", "dmart", "more", "hypermarket", "kirana"],
+    "entertainment": ["netflix", "amazon prime", "spotify", "youtube", "pvrcinema", "inox", "bookmyshow", "gaana"],
+    "transport": ["uber", "ola", "rapido", "metro", "fuel", "petrol", "indian oil", "bharat petroleum", "hindustan petroleum", "taxi", "auto"],
+    "utilities": ["electricity", "water", "gas", "broadband", "airtel", "jio", "vodafone", "bsnl", "tata power", "bescom", "pgvcl", "phone", "internet", "dth", "tata sky"],
+    "rent": ["rent", "landlord", "pg", "hostel", "paying guest"],
+    "emi": ["emi", "loan", "hdfc loan", "icici loan", "bajaj finserv", "loan repayment"],
+    "insurance": ["insurance", "lic", "hdfc life", "icici prudential", "hdfc ergo", "bajaj allianz", "premium"],
+    "salary": ["salary", "payroll", "credit", "hr", "employee"],
+    "transfer": ["transfer", "upi", "self", "impt", "imps", "neft"],
+    "other": []
+  },
+  "default_category": "other",
+  "default_confidence": 0.3
+}
