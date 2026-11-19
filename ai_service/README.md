@@ -13,6 +13,19 @@ The service never calculates safe-to-spend, taxes, SIP values, risk scores or an
 other authoritative financial result. It does not import backend code and has no
 database access.
 
+## Backend integration
+
+The backend's `AIClient` calls `POST /api/v1/ai/merchant-normalize` during
+transaction ingestion when `AI_ENABLED=true`. This path is verified end-to-end by
+`mobile/test/integration/live_backend_test.dart` (run with `--dart-define=EXPECT_AI=true`),
+which asserts that the ingest response reports `processing.ai_used == true` against a
+running service. Failures, timeouts and invalid responses fall back silently to the
+backend's deterministic categoriser.
+
+The scam-explanation and nudge endpoints are implemented and unit-tested, but the
+backend currently generates its own deterministic text for those flows; wiring them
+in is a roadmap item.
+
 ## Architecture
 
 ```text

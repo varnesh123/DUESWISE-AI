@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/config/app_config.dart';
-import 'package:dueswise/core/constants/app_constants.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/due.dart';
@@ -21,6 +20,7 @@ class _DueListScreenState extends State<DueListScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   List<Due> _dues = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -29,8 +29,12 @@ class _DueListScreenState extends State<DueListScreen> {
   }
 
   Future<void> _load() async {
-    final dues = await _repo.getDues();
-    if (mounted) setState(() { _dues = dues; _loading = false; });
+    try {
+      final dues = await _repo.getDues();
+      if (mounted) setState(() { _dues = dues; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   Color _statusColor(String status) {
@@ -53,7 +57,12 @@ class _DueListScreenState extends State<DueListScreen> {
       appBar: AppBar(title: const Text('Upcoming dues')),
       body: _loading
           ? const LoadingState(message: 'Loading dues…')
-          : _dues.isEmpty
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _dues.isEmpty
               ? const EmptyState(icon: Icons.calendar_today_outlined, title: 'No upcoming dues', message: 'All caught up!')
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -80,7 +89,7 @@ class _DueListScreenState extends State<DueListScreen> {
                             Text(d.status.toUpperCase(), style: TextStyle(fontSize: 10, color: _statusColor(d.status), fontWeight: FontWeight.w600)),
                           ],
                         ),
-                        onTap: () => context.pushNamed('${AppRoutes.dueDetail}${d.id}'),
+                        onTap: () => context.push('${AppRoutes.dueDetail}${d.id}'),
                       ),
                     );
                   },

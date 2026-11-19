@@ -8,6 +8,8 @@ Allows user correction (via the dues API).
 from datetime import date, timedelta
 from typing import List, Optional
 
+from sqlalchemy.orm import Session
+
 import statistics
 
 from app.models.due import Due

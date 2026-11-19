@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/due.dart';
@@ -20,6 +21,7 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   Due? _due;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,8 +30,12 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
   }
 
   Future<void> _load() async {
-    final d = await _repo.getDue(widget.dueId);
-    if (mounted) setState(() { _due = d; _loading = false; });
+    try {
+      final d = await _repo.getDue(widget.dueId);
+      if (mounted) setState(() { _due = d; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   @override
@@ -39,7 +45,12 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
       appBar: AppBar(title: const Text('Due details')),
       body: _loading
           ? const LoadingState()
-          : _due == null
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _due == null
               ? const EmptyState(
                   icon: Icons.error_outline,
                   title: 'Due not found',
@@ -91,12 +102,23 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
                                 height: 52,
                                 child: FilledButton(
                                   onPressed: () async {
-                                    await _repo.markDuePaid(widget.dueId);
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Marked as paid')),
-                                      );
-                                      Navigator.pop(context);
+                                    try {
+                                      await _repo.markDuePaid(widget.dueId);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Marked as paid')),
+                                        );
+                                        Navigator.pop(context);
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Could not mark as paid: $e'),
+                                            backgroundColor: AppTheme.danger,
+                                          ),
+                                        );
+                                      }
                                     }
                                   },
                                   child: const Text('Mark as paid'),

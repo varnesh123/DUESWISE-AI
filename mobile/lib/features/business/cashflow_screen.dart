@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/core/constants/app_constants.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/business_cashflow.dart';
@@ -19,6 +19,7 @@ class _CashflowScreenState extends State<CashflowScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   BusinessCashflow? _cashflow;
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -27,8 +28,12 @@ class _CashflowScreenState extends State<CashflowScreen> {
   }
 
   Future<void> _load() async {
-    final cf = await _repo.getBusinessCashflow();
-    if (mounted) setState(() { _cashflow = cf; _loading = false; });
+    try {
+      final cf = await _repo.getBusinessCashflow();
+      if (mounted) setState(() { _cashflow = cf; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   @override
@@ -38,7 +43,12 @@ class _CashflowScreenState extends State<CashflowScreen> {
       appBar: AppBar(title: const Text('Business cash flow')),
       body: _loading
           ? const LoadingState(message: 'Loading cash flow…')
-          : _cashflow == null
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _cashflow == null
               ? const EmptyState(icon: Icons.business_outlined, title: 'No data', message: '')
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),

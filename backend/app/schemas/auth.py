@@ -16,8 +16,10 @@ class DemoUser(BaseModel):
 
 class DemoResponse(BaseModel):
     user: DemoUser
+    user_id: str
     access_token: str
     token_type: str = "bearer"
+    expires_in_minutes: int = 30
 
 
 class UserResponse(BaseModel):

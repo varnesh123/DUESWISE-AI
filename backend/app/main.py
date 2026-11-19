@@ -51,6 +51,8 @@ def _error_code_for_status(status_code: int) -> str:
         403: "FORBIDDEN",
         404: "NOT_FOUND",
         409: "DUPLICATE_RESOURCE",
+        405: "METHOD_NOT_ALLOWED",
+        413: "PAYLOAD_TOO_LARGE",
         415: "UNSUPPORTED_FILE_TYPE",
         422: "VALIDATION_ERROR",
         429: "RATE_LIMITED",

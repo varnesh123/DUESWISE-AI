@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Logged in as ${result.userId}')),
         );
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        context.go(AppRoutes.dashboard);
       }
     } catch (e) {
       if (mounted) {
@@ -72,6 +72,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   'Sign in to your DuesWise account',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
                 ),
+                const SizedBox(height: 12),
+                if (!AppConfig.useMockApi)
+                  Text(
+                    'Live demo mode: this signs you into the selected synthetic persona. '
+                    'Any email and password are accepted — no real account is created.',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.warning),
+                  ),
                 const SizedBox(height: 28),
                 Form(
                   key: _formKey,
@@ -101,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => context.pushNamed(AppRoutes.register),
+                        onPressed: () => context.push(AppRoutes.register),
                         child: const Text("Don't have an account? Create one"),
                       ),
                     ],
@@ -149,7 +157,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Account created for ${result.userId}')),
         );
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+        context.go(AppRoutes.dashboard);
       }
     } catch (e) {
       if (mounted) {

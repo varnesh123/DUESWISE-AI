@@ -22,10 +22,13 @@ from app.schemas.ingestion import (
     FileIngestResponse,
     SmsIngestRequest,
     SmsIngestResponse,
+    UnifiedIngestRequest,
+    UnifiedIngestResponse,
 )
 from app.schemas.transaction import TransactionItem
 from app.services.ai_client import AIClient
 from app.services.categorisation import categorise_merchant
+from app.services.manual_transaction import create_manual_transaction
 from app.services.statement_parser import (
     UnsupportedFormatError,
     parse_csv,
@@ -34,7 +37,7 @@ from app.services.statement_parser import (
 from app.services.transaction_parser import SmsParseError, ParsedTransaction, parse_sms
 from app.repositories.ingestion_repository import IngestionRepository
 from app.repositories.transaction_repository import TransactionRepository
-from app.utils.dates import parse_date_iso
+from app.utils.dates import IST_TZ, now_utc, parse_date_iso
 from app.utils.money import validate_amount_paise
 from app.models.transaction import Transaction
 from app.config import settings
@@ -104,7 +107,12 @@ def _ingest_parsed_transaction(
         source_reference=parsed.source_reference,
     )
     if existing:
-        return {"imported": False, "duplicate": True, "warning": "Duplicate transaction skipped"}
+        return {
+            "imported": False,
+            "duplicate": True,
+            "warning": "Duplicate transaction skipped",
+            "transaction": _txn_to_item(existing),
+        }
 
     txn = repo.create(
         user_id=user_id,
@@ -124,6 +132,146 @@ def _ingest_parsed_transaction(
         is_suspicious=False,
     )
     return {"imported": True, "duplicate": False, "warning": None, "transaction": _txn_to_item(txn)}
+
+
+@router.post(
+    "/transactions/ingest",
+    response_model=UnifiedIngestResponse,
+    tags=["ingestion"],
+    summary="Ingest a transaction (manual entry or SMS text)",
+)
+def ingest_transaction(
+    payload: UnifiedIngestRequest,
+    db: DbSession,
+    current_user: User = Depends(get_current_user),
+):
+    """Ingest a transaction through the contract path.
+
+    Two supported shapes:
+    - manual: ``merchant_raw`` + ``amount_paise`` (+ optional date/type/category)
+    - sms: ``message`` containing a bank/UPI transaction message
+
+    Manual entries are categorised deterministically (AI-assisted only when
+    enabled), deduplicated, and stored exactly like ``/transactions/manual``.
+    """
+    merchant = (payload.merchant_raw or payload.merchant or "").strip()
+
+    # ---- SMS text path ------------------------------------------------
+    if payload.message and not merchant:
+        try:
+            parsed = parse_sms(payload.message)
+        except SmsParseError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Parsing failed: {exc}",
+            )
+        repo = TransactionRepository(db)
+        ing_repo = IngestionRepository(db)
+        record = ing_repo.create(user_id=current_user.id, source="sms")
+        result = _ingest_parsed_transaction(
+            db, repo, ing_repo, record, current_user.id, parsed, "sms"
+        )
+        imported = 1 if result["imported"] else 0
+        ing_repo.update(
+            record,
+            status="completed",
+            imported_count=imported,
+            rejected_count=0 if imported else 1,
+            duplicates_skipped=1 if result["duplicate"] else 0,
+        )
+        return UnifiedIngestResponse(
+            status="completed",
+            transaction=result.get("transaction"),
+            duplicate=result["duplicate"],
+            warnings=[result["warning"]] if result.get("warning") else [],
+            processing={"source": "sms"},
+        )
+
+    # ---- Manual entry path --------------------------------------------
+    if not merchant:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="merchant_raw is required when message is not provided",
+        )
+    if payload.amount_paise is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="amount_paise is required",
+        )
+    try:
+        validate_amount_paise(payload.amount_paise)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        )
+    if payload.transaction_type not in ("credit", "debit"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="transaction_type must be credit or debit",
+        )
+
+    if payload.transaction_date:
+        try:
+            txn_date = parse_date_iso(payload.transaction_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="transaction_date must be YYYY-MM-DD",
+            )
+    else:
+        txn_date = now_utc().astimezone(IST_TZ).date()
+
+    ai_result = ai_client.merchant_normalize(merchant, "INR")
+    normalized, category, confidence = categorise_merchant(
+        merchant,
+        ai_normalized=ai_result.get("merchant_normalized") if ai_result else None,
+        ai_category=ai_result.get("category") if ai_result else None,
+        ai_confidence=ai_result.get("confidence") if ai_result else None,
+    )
+    if payload.category:
+        category = payload.category
+
+    ing_repo = IngestionRepository(db)
+    record = ing_repo.create(user_id=current_user.id, source="manual")
+
+    result = create_manual_transaction(
+        db,
+        user_id=current_user.id,
+        amount_paise=payload.amount_paise,
+        transaction_type=payload.transaction_type,
+        merchant_raw=merchant,
+        merchant_normalized=normalized,
+        category=category,
+        payment_method=payload.payment_method,
+        transaction_date=txn_date,
+    )
+
+    if result.duplicate:
+        ing_repo.update(
+            record, status="completed", imported_count=0,
+            rejected_count=0, duplicates_skipped=1,
+        )
+        return UnifiedIngestResponse(
+            status="duplicate",
+            transaction=_txn_to_item(result.transaction),
+            duplicate=True,
+            warnings=["Duplicate transaction skipped"],
+            processing={"source": "manual"},
+        )
+
+    ing_repo.update(record, status="completed", imported_count=1, rejected_count=0)
+
+    return UnifiedIngestResponse(
+        status="completed",
+        transaction=_txn_to_item(result.transaction),
+        duplicate=False,
+        processing={
+            "source": "manual",
+            "ai_used": bool(ai_result),
+            "categorisation_confidence": confidence,
+        },
+    )
 
 
 @router.post(

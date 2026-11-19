@@ -50,7 +50,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: const Text('Demo account'),
                   subtitle: const Text('Synthetic demo user — no real banking'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.pushNamed(AppRoutes.persona),
+                  onTap: () => context.push(AppRoutes.persona),
                 ),
                 const Divider(height: 1),
                 // Notifications

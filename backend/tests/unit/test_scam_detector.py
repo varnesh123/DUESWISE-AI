@@ -29,7 +29,7 @@ def test_collect_request():
     assert any(i["code"] == "COLLECT_REQUEST" for i in result.indicators)
 
 
-def test_suspicious_link():
+def test_suspicious_link_without_threat_words():
     result = analyze_message("Click here: bit.ly/3xyz to verify.")
     assert any(i["code"] == "SUSPICIOUS_LINK" for i in result.indicators)
 

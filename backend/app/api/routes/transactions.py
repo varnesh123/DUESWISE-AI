@@ -22,6 +22,9 @@ from app.schemas.transaction import (
 from app.utils.dates import parse_date_iso
 from app.utils.money import validate_amount_paise
 from app.models.user import User
+from app.services.manual_transaction import (
+    create_manual_transaction as create_manual_transaction_record,
+)
 
 router = APIRouter()
 
@@ -138,38 +141,20 @@ def create_manual_transaction(
             detail="transaction_date must be YYYY-MM-DD",
         )
 
-    repo = TransactionRepository(db)
-    # Duplicate check on manual entry (no source_reference)
-    existing = repo.find_duplicate(
+    result = create_manual_transaction_record(
+        db,
         user_id=current_user.id,
         amount_paise=payload.amount_paise,
-        transaction_date=txn_date,
-        transaction_type=payload.transaction_type,
-        merchant_normalized=payload.merchant.strip(),
-        payment_method=payload.payment_method,
-        source="manual",
-    )
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Duplicate transaction",
-        )
-
-    txn = repo.create(
-        user_id=current_user.id,
-        amount_paise=payload.amount_paise,
-        currency="INR",
         transaction_type=payload.transaction_type,
         merchant_raw=payload.merchant.strip(),
         merchant_normalized=payload.merchant.strip(),
         category=payload.category or "other",
         payment_method=payload.payment_method,
-        payment_gateway=None,
         transaction_date=txn_date,
-        source="manual",
-        source_reference=None,
-        confidence=1.0,
-        description=None,
-        is_suspicious=False,
     )
-    return _txn_to_item(txn)
+    if result.duplicate:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Duplicate transaction",
+        )
+    return _txn_to_item(result.transaction)
