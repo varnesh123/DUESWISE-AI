@@ -309,3 +309,15 @@ Developer A must confirm the main backend endpoint definitions.
 Developer B must confirm the AI service endpoint definitions and Flutter integration requirements.
 
 **Status: Draft. Do not treat incomplete endpoint schemas as final until both developers approve them.**
+
+---
+
+## 10. As-built implementation notes
+
+The repository now contains a working backend, Flutter client and AI service. A few
+endpoints were implemented differently from the draft above (demo sessions instead of
+password login, `/scams` instead of `/scam-alerts`, `POST /dues/{id}/mark-paid`,
+unified `POST /transactions/ingest`). The running behaviour, request/response shapes
+and the full app-to-backend mapping are documented in
+[`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md). Where this draft and the
+implementation disagree, that document describes the system as built.

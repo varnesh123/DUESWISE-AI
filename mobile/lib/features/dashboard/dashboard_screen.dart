@@ -65,7 +65,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.person),
-            onPressed: () => context.pushNamed(AppRoutes.settings),
+            onPressed: () => context.push(AppRoutes.settings),
             tooltip: 'Settings',
           ),
         ],
@@ -121,7 +121,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             title: Text(_summary!.nextDue!.title, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text('Due ${_summary!.nextDue!.dueDate}'),
             trailing: Text(_summary!.nextDue!.amount.toInrWhole(), style: const TextStyle(fontWeight: FontWeight.w700)),
-            onTap: () => context.pushNamed('${AppRoutes.dueDetail}${_summary!.nextDue!.id}'),
+            onTap: () => context.push('${AppRoutes.dueDetail}${_summary!.nextDue!.id}'),
           ),
         ),
       );
@@ -134,7 +134,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Text('Recent transactions', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           TextButton(
-            onPressed: () => context.pushNamed(AppRoutes.transactions),
+            onPressed: () => context.push(AppRoutes.transactions),
             child: const Text('View all'),
           ),
         ],
@@ -168,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: t.isCredit ? AppTheme.success : AppTheme.primary,
             ),
           ),
-          onTap: () => context.pushNamed('${AppRoutes.transactionDetail}${t.id}'),
+          onTap: () => context.push('${AppRoutes.transactionDetail}${t.id}'),
         ),
       )));
     }

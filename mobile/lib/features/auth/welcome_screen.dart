@@ -41,19 +41,19 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 32),
                 FilledButton.icon(
-                  onPressed: () => context.pushNamed(AppRoutes.login),
+                  onPressed: () => context.push(AppRoutes.login),
                   icon: const Icon(Icons.login),
                   label: const Text('Log in'),
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => context.pushNamed(AppRoutes.register),
+                  onPressed: () => context.push(AppRoutes.register),
                   icon: const Icon(Icons.person_add),
                   label: const Text('Create account'),
                 ),
                 const SizedBox(height: 12),
                 TextButton.icon(
-                  onPressed: () => context.pushNamed(AppRoutes.persona),
+                  onPressed: () => context.push(AppRoutes.persona),
                   icon: const Icon(Icons.person_outlined),
                   label: const Text('Continue with demo data'),
                 ),

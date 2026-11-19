@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/config/app_config.dart';
-import 'package:dueswise/core/constants/app_constants.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/subscription.dart';
@@ -20,6 +19,7 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   List<Subscription> _subs = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -28,8 +28,12 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   }
 
   Future<void> _load() async {
-    final subs = await _repo.getSubscriptions();
-    if (mounted) setState(() { _subs = subs; _loading = false; });
+    try {
+      final subs = await _repo.getSubscriptions();
+      if (mounted) setState(() { _subs = subs; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   @override
@@ -39,7 +43,12 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
       appBar: AppBar(title: const Text('Subscriptions')),
       body: _loading
           ? const LoadingState(message: 'Loading subscriptions…')
-          : _subs.isEmpty
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _subs.isEmpty
               ? const EmptyState(icon: Icons.subscriptions_outlined, title: 'No subscriptions', message: 'Detected subscriptions appear here.')
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -74,25 +83,41 @@ class _SubscriptionListScreenState extends State<SubscriptionListScreen> {
   void _showActions(BuildContext context, Subscription s) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Column(
+      builder: (sheetContext) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
             leading: const Icon(Icons.check_circle, color: AppTheme.success),
             title: const Text('Confirm subscription'),
-            onTap: () {
-              _repo.confirmSubscription(s.id);
-              Navigator.pop(context);
-              setState(() {});
+            onTap: () async {
+              Navigator.pop(sheetContext);
+              try {
+                await _repo.confirmSubscription(s.id);
+                await _load();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not confirm: $e'), backgroundColor: AppTheme.danger),
+                  );
+                }
+              }
             },
           ),
           ListTile(
             leading: const Icon(Icons.delete_outline, color: AppTheme.danger),
             title: const Text('Dismiss detection'),
-            onTap: () {
-              _repo.dismissSubscription(s.id);
-              Navigator.pop(context);
-              setState(() {});
+            onTap: () async {
+              Navigator.pop(sheetContext);
+              try {
+                await _repo.dismissSubscription(s.id);
+                await _load();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not dismiss: $e'), backgroundColor: AppTheme.danger),
+                  );
+                }
+              }
             },
           ),
         ],

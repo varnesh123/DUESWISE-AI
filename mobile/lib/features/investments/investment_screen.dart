@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/investment_summary.dart';
@@ -18,6 +19,7 @@ class _InvestmentScreenState extends State<InvestmentScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   List<InvestmentSummary> _investments = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -26,8 +28,12 @@ class _InvestmentScreenState extends State<InvestmentScreen> {
   }
 
   Future<void> _load() async {
-    final inv = await _repo.getInvestmentSummary();
-    if (mounted) setState(() { _investments = inv; _loading = false; });
+    try {
+      final inv = await _repo.getInvestmentSummary();
+      if (mounted) setState(() { _investments = inv; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   @override
@@ -37,7 +43,12 @@ class _InvestmentScreenState extends State<InvestmentScreen> {
       appBar: AppBar(title: const Text('Investments & SIP')),
       body: _loading
           ? const LoadingState(message: 'Loading investments…')
-          : _investments.isEmpty
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _investments.isEmpty
               ? const EmptyState(icon: Icons.show_chart_outlined, title: 'No investments', message: '')
               : Column(
                   children: [

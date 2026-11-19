@@ -1,428 +1,445 @@
-# DuesWise AI
+```markdown
+<div align="center">
 
-### Your Intelligent AI-Powered Payment Management Assistant
+# 💸 DuesWise-AI
 
-DuesWise AI is an intelligent financial payment management platform designed to help users stay ahead of their bills, subscriptions, recurring payments, and financial obligations.
+**Spend smart, stay ahead.**  
+*An AI-assisted personal finance copilot for India — built around deterministic money rules, synthetic demo personas, and an optional AI microservice.*
 
-Instead of manually remembering payment dates and checking multiple platforms, DuesWise brings payment information together in one place and aims to provide a personalized AI assistant that helps users understand, manage, and prepare for upcoming payments.
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#prerequisites)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#technology-stack)
+[![Flutter](https://img.shields.io/badge/Flutter-3.35%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white)](#prerequisites)
+[![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](#architecture-overview)
+[![Tests](https://img.shields.io/badge/Tests-310%20Passing-2EA44F?style=for-the-badge&logo=githubactions&logoColor=white)](#testing)
 
-The long-term vision is to build an AI agent that proactively monitors payment obligations, tracks available balances where supported, sends personalized reminders, warns users about potential insufficient balances, and eventually assists with payment actions with explicit user approval.
+> **Hackathon MVP** · No real-money transactions · No trading · No bank credentials · 100% synthetic data
 
----
+[Quick Start](#-installation) • [Architecture](#-architecture-overview) • [API Reference](#-api-documentation) • [Test Suite](#-testing) • [Docs](#-further-documentation)
 
-## 1. Project Vision
-
-Managing multiple financial commitments can become difficult:
-
-- Bills have different due dates.
-- Subscriptions renew automatically.
-- Payments are spread across different platforms.
-- Users may forget upcoming payment deadlines.
-- Available balances may be insufficient when payments are due.
-- Tracking recurring expenses manually takes time.
-
-**DuesWise AI aims to solve these problems through one intelligent payment assistant.**
-
-The central objective is not simply to display financial information. It is to help users stay informed, prepared, and in control of their payments through personalized and proactive assistance.
-
-## 2. Core Features
-
-### 2.1 Financial Account Management
-- Manage financial accounts and connected institutions.
-- View available account balances where supported.
-- Support a provider-based financial data integration architecture.
-- Track connection and synchronization status.
-- Clearly distinguish mock data from real connected financial data.
-
-### 2.2 Transaction Management
-- Retrieve and store financial transactions.
-- Categorize income and expenses.
-- View transaction history.
-- Filter transactions by date, category, account, and other supported criteria.
-- Add and manage manual transactions.
-- Prevent accidental duplicate transactions.
-- Support transaction ingestion through supported sources.
-
-### 2.3 Bill Management
-- Create, edit, and manage bills.
-- Track payment due dates.
-- Identify upcoming, due, overdue, and completed bills.
-- Support recurring and one-time bills.
-- Maintain payment history.
-
-### 2.4 Subscription Management
-- Track recurring subscriptions.
-- Manage subscription details and renewal dates.
-- View subscription payment history.
-- Pause, resume, or manage subscriptions where supported.
-- Identify potential recurring payment patterns.
-
-### 2.5 Unified Financial Dashboard
-- View an overview of financial accounts.
-- Monitor income and expenses.
-- View upcoming payments.
-- Track bills and subscriptions.
-- Review recent transactions.
-- Monitor account synchronization status.
-- Access payment information through web and mobile interfaces.
-
-### 2.6 Intelligent AI Payment Assistant — Core Product Direction
-
-The AI assistant is the central part of DuesWise.
-
-Its intended capabilities include:
-
-- Track upcoming bills, subscriptions, and recurring dues.
-- Understand individual payment patterns.
-- Generate personalized payment reminders.
-- Notify users before payment deadlines.
-- Monitor available balances where supported.
-- Warn users when their available balance may be insufficient for upcoming payments.
-- Prioritize payment obligations based on due dates and available funds.
-- Answer questions about payment history and upcoming obligations.
-- Proactively assist users in managing their payment schedules.
-- Eventually assist with payment actions, only after explicit user approval.
-
-The assistant should provide useful, context-aware notifications rather than generic reminders.
-
-**Important:** AI-driven autonomous reasoning and payment assistance are future development capabilities. Their implementation status must be tracked in the project blueprint rather than assumed to be complete.
+</div>
 
 ---
 
-## 3. Application Architecture
+## 🧭 Table of Contents
 
-DuesWise follows a modular architecture with separate backend, web, and mobile applications.
+<details>
+<summary><b>Click to expand navigation</b></summary>
 
-```text
-                 DUESWISE AI
-                      |
-          +-----------+-----------+
-          |                       |
-      Web App                Mobile App
-          |                       |
-          +-----------+-----------+
-                      |
-                  REST API
-                      |
-                FastAPI Backend
-                      |
-        +-------------+-------------+
-        |             |             |
-     Accounts     Transactions   Payments
-        |             |             |
-        +-------------+-------------+
-                      |
-                Service Layer
-                      |
-               Repository Layer
-                      |
-                  Database
-                      |
-          Financial Data Providers
-                      |
-             AI Assistant Layer
-             (Progressive Development)
+1. [Introduction](#-introduction)
+2. [Problem & Solution](#-problem--solution)
+3. [Key Features](#-key-features)
+4. [How It Works](#-how-it-works)
+5. [Architecture Overview](#-architecture-overview)
+6. [Technology Stack](#-technology-stack)
+7. [Repository Structure](#-repository-structure)
+8. [Prerequisites](#-prerequisites)
+9. [Installation](#-installation)
+10. [Running the Services](#-running-the-services)
+11. [Environment Variables](#-environment-variables)
+12. [Mock Mode vs Live Mode](#-mock-mode-vs-live-mode)
+13. [API Documentation](#-api-documentation)
+14. [Testing](#-testing)
+15. [Troubleshooting](#-troubleshooting)
+16. [Current Limitations & Roadmap](#-current-limitations--roadmap)
+17. [Contributing & Further Documentation](#-contributing--further-documentation)
+
+</details>
+
+---
+
+## 🚀 Introduction
+
+**DuesWise-AI** is a mobile-first personal finance assistant tailored for three Indian financial personas: **salaried employees**, **young professionals**, and **small shopkeepers**. It calculates what is genuinely safe to spend after upcoming obligations, flags recurring subscriptions, analyzes suspicious SMS/UPI messages for scam indicators, and compares India's Old vs. New income tax regimes.
+
+Every financial calculation is **100% deterministic** and computed in **integer paise** (never floating-point). The standalone AI microservice only *phrases* text (merchant normalization) and is strictly optional—if unavailable, the core app continues working seamlessly.
+
+---
+
+## 🎯 Problem & Solution
+
+### The Problem
+Indian salaried individuals, young professionals, and small merchants frequently struggle to:
+- Track fragmented recurring subscriptions, EMIs, rent, and utility bills.
+- Know how much balance is truly **safe to spend** before the next payday.
+- Compare the **Old vs. New income-tax regimes** without manual spreadsheets.
+- Spot phishing and **UPI-fraud messages** before clicking malicious links.
+- Track small-business cash flow, receivables, and payables.
+
+### Our Solution
+- 📱 **Flutter Mobile & Web App:** Works offline out-of-the-box in mock mode and switches cleanly to a live backend.
+- ⚙️ **FastAPI Core Backend:** Owns all deterministic money rules, persistence, demo sessions, and business logic.
+- 🧠 **Decoupled AI Microservice:** Normalizes messy merchant strings with deterministic dictionary/heuristic fallbacks and zero financial authority.
+
+---
+
+## ✨ Key Features
+
+| Module | Capabilities |
+| :--- | :--- |
+| 📊 **Dashboard** | Available balance, **safe-to-spend**, upcoming dues total, safety reserve, next due, and recent transactions |
+| 💳 **Transactions** | Search, category filters, manual entry, SMS parsing, CSV/PDF statement upload, and AA-style mock ingestion |
+| 📅 **Dues Tracker** | Upcoming, paid, and overdue bills with one-tap mark-as-paid, creation, and updates |
+| 🔄 **Subscriptions** | Automated recurring payment detection with user confirmation or dismissal |
+| 💡 **Smart Nudges** | Priority-ordered financial insights with read/dismiss state tracking |
+| 🛡️ **Scam Detection** | Deterministic risk score, red-flag indicators, recommended actions, and stored alerts |
+| 🧾 **Tax Comparison** | Old vs. New regime breakdown driven by configurable rule files (`FY-2025-26`) |
+| 🏪 **Business Cash Flow** | Sales, expenses, receivables, payables, and projected balance for the shopkeeper persona |
+| 📈 **Investments** | Simulated, educational portfolio summary (strictly non-transactional) |
+| 👤 **Demo Personas** | Instant switching across *Salaried*, *Young Professional*, and *Shopkeeper* synthetic profiles |
+| 📴 **Offline Mock Mode** | Complete mock repository powered by bundled JSON fixtures |
+
+---
+
+## ⚙️ How It Works
+
+1. **Zero-Config Startup:** The app launches in **mock mode** (`USE_MOCK_API=true`) and is immediately usable without running any servers.
+2. **Demo Authentication:** In **live mode**, the client requests a synthetic demo session (`POST /api/v1/auth/demo`) and receives an opaque bearer token.
+3. **Clean Repository Abstraction:** Every screen talks to `FinanceRepository`; `LiveFinanceRepository` maps backend payloads to UI models.
+4. **Deterministic Backend Engine:** FastAPI validates inputs, runs integer-paise financial rules (safe-to-spend, tax, recurring detection, scam scoring), and persists to SQLite.
+5. **Graceful AI Fallback:** When `AI_ENABLED=true`, the backend queries `ai_service` to normalize unknown merchants—falling back silently to local rules on timeout or failure.
+6. **Uniform Error Handling:** Errors follow a single contract (`{"error": {"code", "message", "details"}}`) surfaced as retryable UI states.
+
+---
+
+## 🏗️ Architecture Overview
+
+```mermaid
+flowchart LR
+    subgraph Client
+        Flutter["📱 Flutter App<br/>mobile/"]
+    end
+
+    subgraph Services
+        API["⚙️ FastAPI Backend<br/>backend/ · :8000"]
+        AI["🧠 FastAPI AI Service<br/>ai_service/ · :8001"]
+    end
+
+    DB[("🗄️ SQLite<br/>dueswise.db")]
+    LLM["☁️ Optional LLM<br/>OpenAI-compatible"]
+
+    Flutter -->|"HTTP JSON + Bearer Token"| API
+    API -->|"SQLAlchemy 2.x"| DB
+    API -->|"Merchant Normalization<br/>(Optional · AI_ENABLED)"| AI
+    AI -.->|"Only if provider configured"| LLM
+
 ```
 
-The architecture is intended to keep business logic separate from presentation, support future integrations, and allow the AI assistant to build on reliable financial data.
+> **Architectural Guardrails:**
+> * Flutter **never** communicates directly with the AI service.
+> * The AI service has **no database** and **never** computes financial numbers.
+> * Safe-to-spend and scam risk scores are always computed deterministically by the backend.
+> 
+> 
 
-## 4. Technology Stack
+---
+
+## 🛠️ Technology Stack
 
 | Layer | Technologies |
-|---|---|
-| Backend | Python, FastAPI |
-| Data validation | Pydantic |
-| ORM | SQLAlchemy |
-| Database | PostgreSQL |
-| Database migrations | Alembic |
-| Web frontend | React, TypeScript, Vite |
-| Mobile application | React Native, Expo |
-| API communication | REST API |
-| Testing | Pytest, Vitest |
-| Containers | Docker, Docker Compose |
-| Authentication | Token-based authentication |
-| Financial data | Provider abstraction and mock provider |
-| AI integration | Planned AI service and agent architecture |
+| --- | --- |
+| **Mobile & Web UI** | Flutter (Material 3), Dart, GoRouter, Riverpod, `http`, `shared_preferences`, `intl` |
+| **Core Backend** | Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.x, SQLite, Uvicorn |
+| **AI Microservice** | Python 3.11+, FastAPI, Pydantic v2, HTTPX, Uvicorn |
+| **Document Parsing** | `pdfplumber` (text-based PDF statements), multipart CSV upload |
+| **Testing & QA** | `pytest`, FastAPI `TestClient`, `flutter_test`, `dart analyze` |
+| **Data & Money** | Integer paise arithmetic, deterministic synthetic personas, JSON rule engines |
 
-Refer to the actual project configuration files for exact dependency versions.
+---
 
-## 5. Project Structure
-
-The following is a conceptual overview. The actual repository structure and module names are authoritative.
+## 📂 Repository Structure
 
 ```text
 DUESWISE-AI/
-│
-├── backend/
+├── backend/                    # Core FastAPI backend (port 8000)
 │   ├── app/
-│   │   ├── api/
-│   │   ├── models/
-│   │   ├── schemas/
-│   │   ├── repositories/
-│   │   ├── services/
-│   │   ├── providers/
-│   │   ├── core/
-│   │   └── main.py
-│   │
-│   ├── migrations/
-│   ├── tests/
+│   │   ├── api/routes/         # auth, dashboard, transactions, ingestion, dues,
+│   │   │                       # subscriptions, nudges, scams, tax, business,
+│   │   │                       # investments, system, health
+│   │   ├── models/             # SQLAlchemy ORM models
+│   │   ├── repositories/       # User-scoped data access layer
+│   │   ├── schemas/            # Pydantic request/response contracts
+│   │   ├── services/           # Safe-to-spend, forecaster, tax, scam, AI client
+│   │   ├── rules/              # JSON rule sets (categories, tax, merchants)
+│   │   ├── main.py             # App factory, exception handlers, lifespan
+│   │   └── config.py           # Environment configuration
+│   ├── tests/                  # 175 unit & integration tests
 │   └── requirements.txt
 │
-├── frontend/
-│   └── web/
-│       ├── src/
-│       │   ├── app/
-│       │   ├── components/
-│       │   ├── pages/
-│       │   ├── services/
-│       │   └── styles/
-│       └── package.json
+├── ai_service/                 # Decoupled AI microservice (port 8001)
+│   ├── app/                    # main, config, routes, schemas, services, utils
+│   ├── tests/                  # 81 unit tests (no live LLM calls)
+│   └── requirements-dev.txt
 │
-├── mobile/
-│   ├── app/
-│   ├── src/
-│   └── package.json
+├── mobile/                     # Flutter client (Android, iOS, Web)
+│   ├── lib/
+│   │   ├── app/                # MaterialApp, GoRouter, repository providers
+│   │   ├── config/             # USE_MOCK_API & BACKEND_BASE_URL flags
+│   │   ├── core/               # Theme, paise formatter, error models, widgets
+│   │   ├── data/               # Models, mock & live repository implementations
+│   │   └── features/           # auth, dashboard, transactions, dues, subscriptions,
+│   │                           # insights, scam, tax, business, investments, settings
+│   ├── assets/mock_data/       # Deterministic offline JSON fixtures
+│   └── test/                   # 45 offline tests + 9 live HTTP integration tests
 │
-├── docs/
-│   ├── api/
-│   ├── architecture/
-│   └── database/
-│
-├── phases/
-│   ├── PHASE_1_PROGRESS.md
-│   └── PHASE_2_PROGRESS.md
-│
-├── PROJECT_BLUEPRINT.md
-├── CONTRACT.md
-├── README.md
-└── .env.example
+├── docs/                       # Architecture, setup, and API integration guides
+├── BLUEPRINT.md                # Product blueprint & deterministic business rules
+├── CONTRACTS.md                # API contract & as-built notes
+└── README.md
+
 ```
 
-## 6. Getting Started
+---
 
-### Prerequisites
+## 📋 Prerequisites
 
-Install the following before running the project:
+| Tool | Minimum Version | Notes |
+| --- | --- | --- |
+| **Python** | `3.11+` | Required for `backend/` and `ai_service/` |
+| **Flutter SDK** | `3.35+` (Dart `3.9+`) | Verified on Flutter `3.35.7` / Dart `3.9.2` |
+| **SQLite** | Bundled | Included with Python standard library |
+| **Emulator / Chrome** | Optional | For running Flutter mobile or web targets |
 
-- Python (version compatible with backend requirements)
-- Node.js and npm
-- PostgreSQL, or Docker with Docker Compose
-- Git
+> ⚠️ **SDK Note:** Flutter `3.24` / Dart `3.5` cannot resolve dependencies because `flutter_localizations` pins `intl 0.20.2`. Use Flutter `3.35+`.
 
-### Clone the Repository
+---
+
+## 💻 Installation
 
 ```bash
-git clone https://github.com/varnesh123/DUESWISE-AI.git
+git clone [https://github.com/varnesh123/DUESWISE-AI.git](https://github.com/varnesh123/DUESWISE-AI.git)
 cd DUESWISE-AI
+
+# 1. Create and activate Python virtual environment
+python3 -m venv .venv
+source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
+
+# 2. Install Backend & AI Service dependencies
+pip install -r backend/requirements.txt
+pip install -r ai_service/requirements-dev.txt
+
+# 3. Install Flutter dependencies
+cd mobile && flutter pub get && cd ..
+
 ```
 
-### Configure Environment Variables
+---
 
-Create the required environment configuration using the provided example:
+## ▶️ Running the Services
 
-```bash
-cp .env.example .env
-```
-
-On Windows Command Prompt:
-
-```cmd
-copy .env.example .env
-```
-
-Configure the database connection and other required settings.
-
-Never commit actual secrets or credentials.
-
-### Start the Backend
+### 1. Start the Core Backend (Port `8000`)
 
 ```bash
 cd backend
-python -m venv .venv
+cp .env.example .env               # Optional: defaults work out of the box
+uvicorn app.main:app --reload --port 8000
+
 ```
 
-Activate the virtual environment.
+* **Health Check:** `http://localhost:8000/health` → `{"status":"ok"}`
+* **Swagger UI:** `http://localhost:8000/docs`
 
-Windows:
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Install dependencies:
+### 2. Start the AI Microservice (Port `8001`)
 
 ```bash
-pip install -r requirements.txt
+cd ai_service
+cp .env.example .env               # Optional: runs deterministically by default
+uvicorn app.main:app --reload --port 8001
+
 ```
 
-Start the development server using the project's configured entry point. For the standard FastAPI entry point:
+* **Health Check:** `http://localhost:8001/health` → `{"status":"ok"}`
+* **Swagger UI:** `http://localhost:8001/docs`
 
-```bash
-uvicorn app.main:app --reload
+To connect the backend to the AI service, enable it in `backend/.env`:
+
+```env
+AI_ENABLED=true
+AI_SERVICE_BASE_URL=http://localhost:8001
+
 ```
 
-Backend API documentation:
+*(With `AI_PROVIDER=none`, the AI service normalizes merchants using its curated dictionary—no API key needed.)*
 
-```text
-http://localhost:8000/docs
-```
+### 3. Run the Flutter App
 
-### Start the Web Application
-
-```bash
-cd frontend/web
-npm install
-npm run dev
-```
-
-Use the development URL printed by Vite.
-
-### Start the Mobile Application
+**Offline Mock Mode (Default — no backend needed):**
 
 ```bash
 cd mobile
-npm install
-npx expo start
+flutter run              # Connected device or emulator
+flutter run -d chrome    # Web browser
+
 ```
 
-Use Expo Go or an appropriate development build to run the application.
-
-### Docker
-
-Where the Docker Compose configuration is available:
+**Live Mode (Connects to FastAPI backend):**
 
 ```bash
-docker compose up --build
+cd mobile
+flutter run \
+  --dart-define=USE_MOCK_API=false \
+  --dart-define=BACKEND_BASE_URL=[http://10.0.2.2:8000](http://10.0.2.2:8000)
+
 ```
 
-Use the repository's Docker configuration and environment variables for the actual service setup.
+| Target Platform | `BACKEND_BASE_URL` |
+| --- | --- |
+| **Android Emulator** | `http://10.0.2.2:8000` |
+| **iOS Simulator / Desktop / Web** | `http://localhost:8000` |
+| **Physical Device (LAN)** | `http://<YOUR-LOCAL-IP>:8000` |
 
 ---
 
-## 7. Testing and Quality Assurance
+## 🔧 Environment Variables
 
-DuesWise uses automated testing to help maintain correctness across its components.
+| Variable | Default | Description |
+| --- | --- | --- |
+| `DATABASE_URL` | `sqlite:///./dueswise.db` | SQLAlchemy connection string |
+| `APP_ENV` / `DEBUG` | `development` / `true` | Runtime environment & debug flag |
+| `AI_ENABLED` | `false` | Toggle backend → AI service calls |
+| `AI_SERVICE_BASE_URL` | `http://localhost:8001` | AI microservice base URL |
+| `AI_TIMEOUT_SECONDS` | `5` | Timeout per AI request |
+| `AI_MAX_RETRIES` | `1` | Retry attempts on transient failure |
+| `DEFAULT_CURRENCY` | `INR` | Currency code |
+| `TIMEZONE` | `Asia/Kolkata` | Business-day timezone |
+| `FORECAST_HORIZON_DAYS` | `30` | Lookahead window for safe-to-spend |
+| `SAFETY_RESERVE_PERCENT` | `10` | Buffer reserve percentage |
+| `MAX_NUDGES_PER_7_DAYS` | `3` | Nudge frequency cap |
+| `MAX_FILE_SIZE_MB` | `10` | Max CSV/PDF upload size |
 
-### Backend
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AI_PROVIDER` | `none` | `none`, `openai_compatible`, `openai`, or `groq` |
+| `AI_API_KEY` | *(empty)* | Provider API key (never commit) |
+| `AI_MODEL` | *(empty)* | Model identifier |
+| `AI_BASE_URL` | *(empty)* | Custom OpenAI-compatible endpoint |
+| `AI_TIMEOUT_SECONDS` | `5` | Provider timeout |
+| `HOST` / `PORT` | `0.0.0.0` / `8001` | Server bind address |
 
-From the backend directory:
+*(Note: `LLM_*` variable names are also accepted as aliases.)*
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `USE_MOCK_API` | `true` | `true` uses bundled JSON fixtures; `false` calls live backend |
+| `BACKEND_BASE_URL` | `http://localhost:8000` | Backend API origin |
+
+---
+
+## 🔄 Mock Mode vs Live Mode
+
+| Aspect | Mock Mode (`USE_MOCK_API=true`) | Live Mode (`USE_MOCK_API=false`) |
+| --- | --- | --- |
+| **Servers Required** | None | Backend (and optionally AI Service) |
+| **Data Source** | `mobile/assets/mock_data/*.json` | SQLite via FastAPI REST API |
+| **Authentication** | Simulated locally | Synthetic demo session + Bearer token |
+| **Persistence** | In-memory session only | Persisted in `backend/dueswise.db` |
+| **Best For** | Offline demos, UI work, quick previews | End-to-end verification & live testing |
+
+---
+
+## 📡 API Documentation
+
+Interactive OpenAPI docs are available automatically when the services are running:
+
+* **Backend Swagger:** `http://localhost:8000/docs` (`openapi.json` at `/openapi.json`)
+* **AI Service Swagger:** `http://localhost:8001/docs`
+
+### Core Endpoints
+
+```http
+POST   /api/v1/auth/demo                    # Create a synthetic demo session
+GET    /api/v1/dashboard/summary            # Safe-to-spend & financial summary
+GET    /api/v1/transactions                 # List & filter transactions
+POST   /api/v1/transactions/ingest          # Manual entry or SMS text ingestion
+POST   /api/v1/transactions/ingest/file     # CSV / PDF bank statement upload
+GET    /api/v1/dues/{due_id}                # Inspect a specific due
+POST   /api/v1/dues/{due_id}/mark-paid      # Mark a due as paid
+GET    /api/v1/subscriptions                # List detected recurring subscriptions
+GET    /api/v1/nudges                       # Fetch prioritized financial insights
+POST   /api/v1/scams/analyze                # Deterministic SMS/UPI scam analysis
+POST   /api/v1/tax/compare                  # Old vs. New Indian tax regime comparison
+GET    /api/v1/business/cashflow            # Small-business cash flow overview
+GET    /api/v1/investments/summary          # Simulated portfolio summary
+
+```
+
+---
+
+## 🧪 Testing
+
+All test suites are verified and passing across the stack:
+
+| Test Suite | Command | Tests | Status |
+| --- | --- | --- | --- |
+| **Backend (Unit + API)** | `cd backend && pytest -q` | **175** | ✅ Passing |
+| **AI Microservice** | `cd ai_service && pytest -q` | **81** | ✅ Passing |
+| **Flutter (Unit + Widget)** | `cd mobile && flutter test` | **45** | ✅ Passing |
+| **Flutter ⇄ Backend Live E2E** | See command below | **9** | ✅ Passing |
+| **Dart Static Analysis** | `cd mobile && dart analyze` | — | ✅ 0 Errors |
+
+### Running the Live HTTP Integration Suite
+
+Start the backend on port `8099` and the AI service on port `8001`, then run:
 
 ```bash
-python -m pytest -q
+cd mobile
+flutter test test/integration/live_backend_test.dart \
+  --dart-define=LIVE_BACKEND=[http://127.0.0.1:8099](http://127.0.0.1:8099) \
+  --dart-define=EXPECT_AI=true
+
 ```
 
-### Web
-
-From `frontend/web`:
-
-```bash
-npm run lint
-npm test
-npm run build
-```
-
-### Mobile
-
-From `mobile`:
-
-```bash
-npm run typecheck
-```
-
-Run the relevant tests and checks after making changes. Do not assume a feature is complete merely because its implementation exists.
-
-Test results and accepted limitations should be recorded in the corresponding phase progress documents.
+*(Automatically skipped during standard `flutter test` runs when `LIVE_BACKEND` is unset.)*
 
 ---
 
-## 8. Security and Financial Data Principles
+## 🛠️ Troubleshooting
 
-Security is an essential engineering requirement because DuesWise handles sensitive financial information. It supports the product's purpose; it is not the product's purpose.
-
-Key principles:
-
-- Enforce authentication and per-user data isolation.
-- Validate financial information received from external providers.
-- Prevent unauthorized access to another user's financial data.
-- Never store bank passwords, UPI PINs, OTPs, or CVVs.
-- Use secure handling of authentication tokens.
-- Avoid exposing credentials and sensitive information in logs.
-- Clearly label mock financial information.
-- Never fabricate real account balances or transactions.
-- Require explicit user approval before any future payment execution.
-- Preserve accurate payment history and auditability.
+| Issue | Resolution |
+| --- | --- |
+| `version solving failed` on `intl` | Upgrade Flutter SDK to `3.35+` (Dart `3.9+`). |
+| `Address already in use` | Another process is occupying port `8000` or `8001`; stop it or pass `--port`. |
+| `UNAUTHORIZED` error in live mode | Session expired or backend restarted; return to login and start a new demo session. |
+| Android emulator can't reach backend | Use `http://10.0.2.2:8000` instead of `localhost`. |
+| `merchant_normalize` isn't called | Ensure `AI_ENABLED=true` in `backend/.env` and `ai_service` is running on port `8001`. |
+| PDF upload fails | Only text-based PDFs are supported; scanned image PDFs are not parsed. |
 
 ---
 
-## 9. Development Roadmap
+## 📌 Current Limitations & Roadmap
 
-Development is organized into phases. The authoritative scope and acceptance criteria for each phase are maintained in `PROJECT_BLUEPRINT.md`.
+### Current Limitations
 
-| Phase | Focus |
-|---|---|
-| Phase 1 | Application foundation, authentication, and account/session management |
-| Phase 2 | Financial data foundation, accounts, transactions, bills, subscriptions, and dashboards |
-| Phase 3 onward | Follow the approved requirements and acceptance criteria in `PROJECT_BLUEPRINT.md` |
+* **Demo Authentication Only:** Uses synthetic user UUID tokens without passwords, registration, or token expiry enforcement.
+* **Heuristic Calculations:** Safe-to-spend, scam scoring, and `FY-2025-26` tax rules (`unverified`) are deterministic educational models, not certified financial/legal advice.
+* **Simulated Investments:** Portfolio data is mock/educational—no live market feeds or brokerage integrations.
+* **AI Scope:** Only merchant normalization is wired into the backend flow; AI scam explanations and nudge phrasing endpoints remain decoupled.
 
-The long-term roadmap centers on the intelligent payment assistant, personalized reminders, proactive balance warnings, and approval-based payment assistance.
+### Future Improvements
 
-Phases should be marked complete only after their acceptance criteria and verification requirements have passed.
-
----
-
-## 10. Development Principles
-
-All future development should follow these principles:
-
-1. Preserve the central DuesWise product vision.
-2. Consult `PROJECT_BLUEPRINT.md` before implementing new functionality.
-3. Treat the blueprint as a living document and update it when justified.
-4. Maintain backward compatibility where practical.
-5. Avoid unnecessary rewrites and unrelated scope expansion.
-6. Implement required functionality even if an initial plan overlooked it.
-7. Keep backend, web, and mobile contracts consistent.
-8. Test changes before declaring a phase complete.
-9. Never represent mock financial information as real data.
-10. Keep the AI assistant and personalized payment management at the center of the product.
+* Production JWT/OAuth2 authentication with hashed credentials and refresh tokens.
+* PostgreSQL + Alembic database migrations for multi-tenant production deployment.
+* Full integration of AI nudge phrasing and scam explanation endpoints with strict output validation.
+* Multi-year verified Indian tax rule tables and scheduled push notifications.
 
 ---
 
-## 11. Current Project Status
+## 🤝 Contributing & Further Documentation
 
-For the latest verified implementation status, refer to:
+### Contributing
 
-- `PROJECT_BLUEPRINT.md` — overall project scope and roadmap.
-- `phases/PHASE_1_PROGRESS.md` — Phase 1 completion record.
-- `phases/PHASE_2_PROGRESS.md` — Phase 2 implementation and verification record.
-- Subsequent phase progress documents — later implementation and verification records.
+1. Fork the repo and branch off `main`: `git checkout -b feature/your-feature`
+2. Keep business logic in backend services and UI behind `FinanceRepository`.
+3. Represent all monetary amounts as **integer paise**—never floats.
+4. Ensure `pytest -q`, `dart analyze`, and `flutter test` pass before opening a PR.
 
-This README describes the project vision and architecture. It should be updated whenever major functionality, setup instructions, or architecture changes.
+### Further Documentation
 
----
-
-## 12. Contributing
-
-Contributions should preserve the existing architecture and project contracts.
-
-Before submitting changes:
-
-1. Review the relevant section of `PROJECT_BLUEPRINT.md`.
-2. Understand the existing implementation.
-3. Make focused changes.
-4. Run relevant automated checks.
-5. Update documentation when necessary.
-6. Provide a clear summary of changes and verification results.
-
-Do not commit secrets, environment files, local databases, or generated artifacts.
+* 📐 [docs/ARCHITECTURE.md](https://www.google.com/search?q=docs/ARCHITECTURE.md) — System layers, data flow, and design decisions
+* 🛠️ [docs/SETUP.md](https://www.google.com/search?q=docs/SETUP.md) — Step-by-step local environment setup
+* 🔌 [docs/API_INTEGRATION.md](https://www.google.com/search?q=docs/API_INTEGRATION.md) — Flutter ⇄ Backend endpoint mapping
+* 📦 [backend/README.md](https://www.google.com/search?q=backend/README.md) · [mobile/README.md](https://www.google.com/search?q=mobile/README.md) · [ai_service/README.md](https://www.google.com/search?q=ai_service/README.md) — Component-level guides
+* 📋 [BLUEPRINT.md](BLUEPRINT.md) & [CONTRACTS.md](CONTRACTS.md) — Product blueprint and API contracts
 
 ---
 
-## 13. Project
-
-**DuesWise AI — Intelligent Payment Management Assistant**
-
-Built to help people remember, understand, and manage their financial commitments with intelligent, proactive assistance.
-
-**Repository:** https://github.com/varnesh123/DUESWISE-AI
-
-**Core vision:** One intelligent assistant to keep track of your payments, prepare you for upcoming dues, and help you stay financially organized.
+**DuesWise-AI** — *Spend smart, stay ahead.*

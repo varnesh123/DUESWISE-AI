@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/config/app_config.dart';
-import 'package:dueswise/core/constants/app_constants.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/nudge.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
@@ -19,6 +18,7 @@ class _NudgeListScreenState extends State<NudgeListScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   List<Nudge> _nudges = [];
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -27,8 +27,12 @@ class _NudgeListScreenState extends State<NudgeListScreen> {
   }
 
   Future<void> _load() async {
-    final nudges = await _repo.getNudges();
-    if (mounted) setState(() { _nudges = nudges; _loading = false; });
+    try {
+      final nudges = await _repo.getNudges();
+      if (mounted) setState(() { _nudges = nudges; _loading = false; _error = null; });
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
   }
 
   Color _priorityColor(String p) {
@@ -49,7 +53,12 @@ class _NudgeListScreenState extends State<NudgeListScreen> {
       appBar: AppBar(title: const Text('Insights & nudges')),
       body: _loading
           ? const LoadingState(message: 'Loading nudges…')
-          : _nudges.isEmpty
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : _nudges.isEmpty
               ? const EmptyState(icon: Icons.lightbulb_outline, title: 'No nudges', message: 'Insights appear when relevant.')
               : ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -83,9 +92,16 @@ class _NudgeListScreenState extends State<NudgeListScreen> {
   }
 
   Future<void> _markRead(Nudge n) async {
-    if (!n.read) {
+    if (n.read) return;
+    try {
       await _repo.markNudgeRead(n.id);
-      setState(() {});
+      await _load();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not mark as read: $e'), backgroundColor: AppTheme.danger),
+        );
+      }
     }
   }
 }
