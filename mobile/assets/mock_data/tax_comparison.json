@@ -1,0 +1,8 @@
+{
+  "tax_year": "2026-27",
+  "old_regime": {"taxable_income_paise": 55000000, "income_tax_paise": 712500, "cess_paise": 28500, "total_tax_paise": 741000},
+  "new_regime": {"taxable_income_paise": 52500000, "income_tax_paise": 675000, "cess_paise": 27000, "total_tax_paise": 702000},
+  "recommended_lower_tax_regime": "new",
+  "estimated_difference_paise": 39000,
+  "disclaimer": "Illustrative guidance only. Verify applicable rules."
+}

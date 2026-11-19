@@ -1,0 +1,16 @@
+{
+  "transactions": [
+    {"id": "txn_001", "amount_paise": 6000000, "currency": "INR", "transaction_type": "credit", "merchant_normalized": "Salary Credit", "category": "income", "payment_method": "bank_transfer", "transaction_date": "2026-11-01", "source": "mock_aa", "confidence": 0.99},
+    {"id": "txn_002", "amount_paise": 89900, "currency": "INR", "transaction_type": "debit", "merchant_raw": "NETFLIX INDIA", "merchant_normalized": "Netflix", "category": "entertainment", "payment_method": "UPI", "gateway": "UPI", "transaction_date": "2026-11-05", "source": "sms", "confidence": 0.97},
+    {"id": "txn_003", "amount_paise": 45000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Swiggy", "category": "food", "payment_method": "UPI", "transaction_date": "2026-11-06", "source": "sms", "confidence": 0.95},
+    {"id": "txn_004", "amount_paise": 60000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Blinkit", "category": "groceries", "payment_method": "UPI", "transaction_date": "2026-11-07", "source": "sms", "confidence": 0.94},
+    {"id": "txn_005", "amount_paise": 30000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Uber", "category": "transport", "payment_method": "UPI", "transaction_date": "2026-11-08", "source": "sms", "confidence": 0.96},
+    {"id": "txn_006", "amount_paise": 120000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Amazon", "category": "shopping", "payment_method": "card", "transaction_date": "2026-11-09", "source": "sms", "confidence": 0.98},
+    {"id": "txn_007", "amount_paise": 11900, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Spotify", "category": "entertainment", "payment_method": "UPI", "transaction_date": "2026-11-10", "source": "sms", "confidence": 0.93},
+    {"id": "txn_008", "amount_paise": 29900, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Amazon Prime", "category": "entertainment", "payment_method": "UPI", "transaction_date": "2026-11-12", "source": "sms", "confidence": 0.92},
+    {"id": "txn_009", "amount_paise": 80000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "BigBasket", "category": "groceries", "payment_method": "UPI", "transaction_date": "2026-11-14", "source": "sms", "confidence": 0.95},
+    {"id": "txn_010", "amount_paise": 150000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Electricity Board", "category": "utilities", "payment_method": "bank_transfer", "transaction_date": "2026-11-15", "source": "csv", "confidence": 0.99},
+    {"id": "txn_011", "amount_paise": 300000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Zomato", "category": "food", "payment_method": "UPI", "transaction_date": "2026-11-16", "source": "sms", "confidence": 0.94},
+    {"id": "txn_012", "amount_paise": 1200000, "currency": "INR", "transaction_type": "debit", "merchant_normalized": "Home Loan EMI", "category": "emi", "payment_method": "bank_transfer", "transaction_date": "2026-11-25", "source": "mock_aa", "confidence": 0.99}
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "nudges": [
+    {"id": "nudge_001", "type": "overspending_before_due", "priority": "medium", "title": "A small heads-up!", "message": "Your entertainment spending is above normal and your EMI is due in 5 days.", "created_at": "2026-11-18T14:00:00+05:30", "read": false},
+    {"id": "nudge_002", "type": "large_due_upcoming", "priority": "high", "title": "Home EMI due soon", "message": "Your Home EMI of \u20b912,000 is due in 5 days. Consider setting some money aside.", "created_at": "2026-11-17T10:00:00+05:30", "read": false},
+    {"id": "nudge_003", "type": "subscription_reminder", "priority": "low", "title": "Subscription review", "message": "You have 3 active entertainment subscriptions. Review them to save money.", "created_at": "2026-11-15T09:00:00+05:30", "read": true}
+  ]
+}

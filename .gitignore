@@ -72,3 +72,45 @@ backend/data/generated/
 
 # Logs
 *.log
+
+# Flutter build artifacts
+build/
+.dart_tool/
+**/*.dart-unoptimized
+**.sys.dart
+
+# Dart/Flutter packages
+.packages
+.glide.yaml
+.lock-watcher
+
+# Dart dev comp
+.dart_tool/
+.dart_tool/SwiftPackageManager/
+
+# Flutter Tools gen
+flutter_gen/
+
+# Security
+**.env*
+.local.env
+
+# Generated code
+gen/
+lib/src/
+
+# Misc
+.dart_tool/**
+/linux_kernel/**
+/win32/**
+/macos/**
+/ios/**
+/android/**
+/web/
+
+# FastAST
+**/*.ast
+
+# Token
+**/token*
+**/auth_token*

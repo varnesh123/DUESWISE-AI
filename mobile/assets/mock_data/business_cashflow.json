@@ -1,0 +1,8 @@
+{
+  "sales_paise": 4000000,
+  "expenses_paise": 2000000,
+  "receivables_paise": 1200000,
+  "payables_paise": 1800000,
+  "projected_cash_balance_paise": 5400000,
+  "period": "current_month"
+}

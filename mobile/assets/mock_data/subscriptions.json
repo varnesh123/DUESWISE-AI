@@ -1,0 +1,7 @@
+{
+  "subscriptions": [
+    {"id": "sub_001", "merchant": "Netflix", "category": "entertainment", "expected_amount_paise": 89900, "frequency": "monthly", "next_due_date": "2026-12-18", "detection_confidence": 0.95, "status": "active", "is_user_confirmed": false, "price_change_percent": 0},
+    {"id": "sub_002", "merchant": "Spotify", "category": "entertainment", "expected_amount_paise": 11900, "frequency": "monthly", "next_due_date": "2026-11-25", "detection_confidence": 0.92, "status": "active", "is_user_confirmed": false, "price_change_percent": 0},
+    {"id": "sub_003", "merchant": "Amazon Prime", "category": "entertainment", "expected_amount_paise": 29900, "frequency": "monthly", "next_due_date": "2026-11-20", "detection_confidence": 0.90, "status": "active", "is_user_confirmed": false, "price_change_percent": 0}
+  ]
+}
