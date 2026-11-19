@@ -1,0 +1,29 @@
+{
+  "aliases": [
+    { "pattern": "NETFLIX", "normalized": "Netflix", "category": "entertainment", "confidence": 0.98 },
+    { "pattern": "AMAZON", "normalized": "Amazon", "category": "groceries", "confidence": 0.95 },
+    { "pattern": "SWIGGY", "normalized": "Swiggy", "category": "food", "confidence": 0.97 },
+    { "pattern": "ZOMATO", "normalized": "Zomato", "category": "food", "confidence": 0.97 },
+    { "pattern": "UBER", "normalized": "Uber", "category": "transport", "confidence": 0.96 },
+    { "pattern": "OLA", "normalized": "Ola", "category": "transport", "confidence": 0.96 },
+    { "pattern": "SPOTIFY", "normalized": "Spotify", "category": "entertainment", "confidence": 0.97 },
+    { "pattern": "YOUTUBE", "normalized": "YouTube", "category": "entertainment", "confidence": 0.96 },
+    { "pattern": "AIRTEL", "normalized": "Airtel", "category": "utilities", "confidence": 0.95 },
+    { "pattern": "JIO", "normalized": "Jio", "category": "utilities", "confidence": 0.95 },
+    { "pattern": "BSNL", "normalized": "BSNL", "category": "utilities", "confidence": 0.95 },
+    { "pattern": "TATA POWER", "normalized": "Tata Power", "category": "utilities", "confidence": 0.95 },
+    { "pattern": "HDFC", "normalized": "HDFC Bank", "category": "transfer", "confidence": 0.6 },
+    { "pattern": "ICICI", "normalized": "ICICI Bank", "category": "transfer", "confidence": 0.6 },
+    { "pattern": "SBI", "normalized": "State Bank of India", "category": "transfer", "confidence": 0.6 },
+    { "pattern": "AXIS", "normalized": "Axis Bank", "category": "transfer", "confidence": 0.6 },
+    { "pattern": "SALARY", "normalized": "Salary Credit", "category": "salary", "confidence": 0.9 },
+    { "pattern": "PAYROLL", "normalized": "Salary Credit", "category": "salary", "confidence": 0.9 },
+    { "pattern": "RENT", "normalized": "Rent Payment", "category": "rent", "confidence": 0.9 },
+    { "pattern": "LIC ", "normalized": "LIC Insurance", "category": "insurance", "confidence": 0.9 },
+    { "pattern": "BAJAJ FINSERV", "normalized": "Bajaj Finserv", "category": "emi", "confidence": 0.92 },
+    { "pattern": "GOOGLE PAY", "normalized": "Google Pay", "category": "transfer", "confidence": 0.7 },
+    { "pattern": "GPay", "normalized": "Google Pay", "category": "transfer", "confidence": 0.7 },
+    { "pattern": "PHONEPE", "normalized": "PhonePe", "category": "transfer", "confidence": 0.7 },
+    { "pattern": "PAYTM", "normalized": "Paytm", "category": "transfer", "confidence": 0.7 }
+  ]
+}
