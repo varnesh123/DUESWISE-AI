@@ -13,6 +13,7 @@ class NudgeItem(BaseModel):
     message: str
     created_at: datetime
     status: str
+    read: bool = False
 
 
 class NudgeList(BaseModel):

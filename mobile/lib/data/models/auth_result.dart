@@ -17,11 +17,15 @@ class AuthResult {
   });
 
   factory AuthResult.fromJson(Map<String, dynamic> json) {
+    // The backend demo session returns `user_id` at the top level and also a
+    // nested `user` object; support both shapes.
+    final user = json['user'];
+    final nestedUserId = user is Map ? user['id']?.toString() : null;
     return AuthResult(
       accessToken: json['access_token'] as String? ?? '',
       tokenType: json['token_type'] as String? ?? 'Bearer',
       expiresInMinutes: int.tryParse(json['expires_in_minutes']?.toString() ?? '') ?? 30,
-      userId: json['user_id'] as String? ?? '',
+      userId: json['user_id'] as String? ?? nestedUserId ?? '',
       refreshToken: json['refresh_token'] as String?,
     );
   }

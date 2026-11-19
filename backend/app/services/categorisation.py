@@ -9,7 +9,7 @@ result — see ``ai_client.py``.
 import json
 import os
 import re
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 _RULES_DIR = os.path.join(os.path.dirname(__file__), "..", "rules")
 

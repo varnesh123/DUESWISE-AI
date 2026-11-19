@@ -18,6 +18,8 @@ same due.
 from datetime import date, timedelta
 from typing import Optional
 
+from sqlalchemy.orm import Session
+
 from app.config import settings
 from app.models.due import Due
 from app.models.transaction import Transaction

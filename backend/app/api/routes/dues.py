@@ -63,6 +63,28 @@ def list_dues(
     return DueList(items=[_due_to_item(d) for d in items], total=total)
 
 
+@router.get(
+    "/dues/{due_id}",
+    response_model=DueItem,
+    tags=["dues"],
+    summary="Get a due by ID",
+)
+def get_due(
+    due_id: str,
+    db: DbSession,
+    current_user: User = Depends(get_current_user),
+):
+    """Get a single due (user-scoped)."""
+    repo = DueRepository(db)
+    due = repo.get(due_id, current_user.id)
+    if due is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Due not found",
+        )
+    return _due_to_item(due)
+
+
 @router.post(
     "/dues",
     response_model=DueItem,

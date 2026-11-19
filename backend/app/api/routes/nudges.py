@@ -20,6 +20,7 @@ def _nudge_to_item(nudge: Nudge) -> NudgeItem:
         message=nudge.message,
         created_at=nudge.created_at,
         status=nudge.status,
+        read=nudge.status == "read",
     )
 
 

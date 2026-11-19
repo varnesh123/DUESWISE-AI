@@ -1,18 +1,16 @@
 /// Live [FinanceRepository] implementation backed by the main backend
-/// (Developer A, port 8000).
+/// (FastAPI, default `http://localhost:8000`).
 ///
 /// All network calls go through [ApiClient], which authenticates with a
 /// bearer token and translates HTTP errors into [AppException] instances.
 ///
 /// Flutter never calls the independent AI service (`:8001`) directly.
 ///
-/// Some endpoints used by the mock repository (mark-as-paid, confirm /
-/// dismiss subscription, mark nudge read) are not yet defined in
-/// CONTRACTS.md. They are implemented here with documented assumptions
-/// and flagged for Developer A confirmation.
+/// This repository is the single adapter between the backend's JSON and the
+/// UI models. Where the backend uses a different envelope or field name than
+/// the UI model (for example list responses use `items`), the mapping happens
+/// here so the rest of the app stays backend-agnostic.
 library dueswise.data.live.live_finance_repository;
-
-import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,18 +36,28 @@ const String _tokenKey = 'dueswise_access_token';
 /// Key under which the selected persona index is persisted.
 const String _personaKey = 'dueswise_selected_persona';
 
+/// Financial year whose deterministic rules ship with the backend
+/// (`backend/app/rules/tax_rules.json`). The backend rejects other years.
+const String _supportedTaxYear = 'FY-2025-26';
+
 /// Live repository backed by HTTP calls to the main backend.
 class LiveFinanceRepository implements FinanceRepository {
-  LiveFinanceRepository() {
-    _apiClient = ApiClient(baseUrl: AppConfig.backendBaseUrl);
+  LiveFinanceRepository({ApiClient? apiClient}) {
+    _apiClient = apiClient ?? ApiClient(baseUrl: AppConfig.backendBaseUrl);
     _prefs = null;
     _selectedPersona = DemoPersona.salaried;
-    _loadTokenAndPersona();
+    _initFuture = _loadTokenAndPersona();
   }
 
   late final ApiClient _apiClient;
   SharedPreferences? _prefs;
   late DemoPersona _selectedPersona;
+  Future<void>? _initFuture;
+
+  /// Wait until the persisted token and persona have been restored.
+  Future<void> _ensureReady() async {
+    await (_initFuture ??= _loadTokenAndPersona());
+  }
 
   Future<void> _loadTokenAndPersona() async {
     _prefs = await SharedPreferences.getInstance();
@@ -67,42 +75,46 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> selectPersona(DemoPersona persona) async {
+    await _ensureReady();
     _selectedPersona = persona;
     await _prefs?.setInt(_personaKey, DemoPersona.values.indexOf(persona));
   }
 
   // ========================================================================
-  // Authentication
+  // Authentication (synthetic demo session — no real credentials)
   // ========================================================================
+
+  /// Map the UI persona to the backend's demo persona key.
+  String _backendPersonaKey(DemoPersona persona) {
+    switch (persona) {
+      case DemoPersona.salaried:
+        return 'salaried';
+      case DemoPersona.youngProfessional:
+        return 'young_professional';
+      case DemoPersona.shopkeeper:
+        return 'shopkeeper';
+    }
+  }
 
   @override
   Future<AuthResult> login(String email, String password) async {
+    await _ensureReady();
     final body = await _apiClient.post(
-      '/auth/login',
-      body: <String, dynamic>{
-        'email': email,
-        'password': password,
-      },
+      '/auth/demo',
+      body: <String, dynamic>{'persona': _backendPersonaKey(_selectedPersona)},
       includeAuth: false,
     );
     return _parseAuthResult(body);
   }
 
+  /// The MVP has no real account system: "register" starts the same synthetic
+  /// demo session for the selected persona. See docs/API_INTEGRATION.md.
   @override
   Future<AuthResult> register(String email, String password, String name) async {
-    final body = await _apiClient.post(
-      '/auth/register',
-      body: <String, dynamic>{
-        'email': email,
-        'password': password,
-        'name': name,
-      },
-      includeAuth: false,
-    );
-    return _parseAuthResult(body);
+    return login(email, password);
   }
 
-  AuthResult _parseAuthResult(Map<String, dynamic>? body) {
+  Future<AuthResult> _parseAuthResult(Map<String, dynamic>? body) async {
     if (body == null) {
       throw AppException(
         code: 'INVALID_RESPONSE',
@@ -111,7 +123,7 @@ class LiveFinanceRepository implements FinanceRepository {
     }
     final result = AuthResult.fromJson(body);
     if (result.accessToken.isNotEmpty) {
-      _apiClient.persistToken(result.accessToken, (t) async {
+      await _apiClient.persistToken(result.accessToken, (t) async {
         await _prefs?.setString(_tokenKey, t ?? '');
       });
     }
@@ -120,6 +132,7 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> logout() async {
+    await _ensureReady();
     await _apiClient.clearToken((t) async {
       await _prefs?.setString(_tokenKey, t ?? '');
     });
@@ -133,6 +146,7 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<DashboardSummary> getDashboardSummary() async {
+    await _ensureReady();
     final body = await _apiClient.get('/dashboard/summary');
     if (body == null) {
       throw AppException(code: 'INVALID_RESPONSE', message: 'Dashboard response was empty.');
@@ -151,28 +165,28 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<List<Transaction>> getTransactions({String? category, String? query}) async {
-    final queryParams = <String, String>{};
+    await _ensureReady();
+    final params = <String, String>{'page_size': '100'};
     if (category != null && category.isNotEmpty) {
-      queryParams['category'] = category;
+      params['category'] = category;
     }
+    // The backend filter parameter is `search` (merchant/category text).
     if (query != null && query.isNotEmpty) {
-      queryParams['query'] = query;
+      params['search'] = query;
     }
-    final uri = Uri.parse('$_apiBaseUrl/transactions').replace(queryParameters: queryParams);
-    final body = await _apiClient.get(uri.path);
-    if (body == null) return <Transaction>[];
-    final list = body['transactions'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => Transaction.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    final qs = params.entries
+        .map((e) => '${Uri.encodeQueryComponent(e.key)}=${Uri.encodeQueryComponent(e.value)}')
+        .join('&');
+    final body = await _apiClient.get('/transactions?$qs');
+    return _itemsOf(body, 'transactions')
+        .map((e) => Transaction.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
-
-  String get _apiBaseUrl => AppConfig.apiBaseUrl;
 
   @override
   Future<IngestedTransaction> ingestTransaction(Map<String, dynamic> payload) async {
-    final body = await _apiClient.post(
-      '/transactions/ingest',
-      body: payload,
-    );
+    await _ensureReady();
+    final body = await _apiClient.post('/transactions/ingest', body: payload);
     if (body == null) {
       throw AppException(code: 'INVALID_RESPONSE', message: 'Ingest response was empty.');
     }
@@ -185,16 +199,16 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<List<Due>> getDues() async {
+    await _ensureReady();
     final body = await _apiClient.get('/dues');
-    if (body == null) return <Due>[];
-    final list = body['dues'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => Due.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return _itemsOf(body, 'dues')
+        .map((e) => Due.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   @override
   Future<Due> getDue(String id) async {
-    // NOTE: CONTRACTS.md does not define a per-due detail endpoint.
-    // Assumption: GET /api/v1/dues/{id}. Confirm with Developer A.
+    await _ensureReady();
     final body = await _apiClient.get('/dues/$id');
     if (body == null) {
       throw NotFoundException(message: 'Due $id not found.');
@@ -204,9 +218,12 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<void> markDuePaid(String dueId) async {
-    // NOTE: CONTRACTS.md does not define a mark-as-paid endpoint.
-    // Assumption: PATCH /api/v1/dues/{id}/pay. Confirm with Developer A.
-    await _apiClient.patch('/dues/$dueId/pay');
+    await _ensureReady();
+    final today = DateTime.now().toIso8601String().split('T').first;
+    await _apiClient.post(
+      '/dues/$dueId/mark-paid',
+      body: <String, dynamic>{'paid_date': today},
+    );
   }
 
   // ========================================================================
@@ -215,23 +232,22 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<List<Subscription>> getSubscriptions() async {
+    await _ensureReady();
     final body = await _apiClient.get('/subscriptions');
-    if (body == null) return <Subscription>[];
-    final list = body['subscriptions'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => Subscription.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return _itemsOf(body, 'subscriptions')
+        .map((e) => Subscription.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   @override
   Future<void> confirmSubscription(String subId) async {
-    // NOTE: CONTRACTS.md does not define a confirm-subscription endpoint.
-    // Assumption: POST /api/v1/subscriptions/{id}/confirm. Confirm with Developer A.
+    await _ensureReady();
     await _apiClient.post('/subscriptions/$subId/confirm');
   }
 
   @override
   Future<void> dismissSubscription(String subId) async {
-    // NOTE: CONTRACTS.md does not define a dismiss-subscription endpoint.
-    // Assumption: POST /api/v1/subscriptions/{id}/dismiss. Confirm with Developer A.
+    await _ensureReady();
     await _apiClient.post('/subscriptions/$subId/dismiss');
   }
 
@@ -241,57 +257,110 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<List<Nudge>> getNudges() async {
+    await _ensureReady();
     final body = await _apiClient.get('/nudges');
-    if (body == null) return <Nudge>[];
-    final list = body['nudges'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => Nudge.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    return _itemsOf(body, 'nudges')
+        .map((e) => Nudge.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList();
   }
 
   @override
   Future<void> markNudgeRead(String nudgeId) async {
-    // NOTE: CONTRACTS.md does not define a mark-nudge-read endpoint.
-    // Assumption: POST /api/v1/nudges/{id}/read. Confirm with Developer A.
+    await _ensureReady();
     await _apiClient.post('/nudges/$nudgeId/read');
   }
 
   // ========================================================================
-  // Scam
+  // Scam detection
   // ========================================================================
 
   @override
   Future<ScamExplanation> analyzeScam(ScamAnalysisRequest request) async {
+    await _ensureReady();
     final body = await _apiClient.post(
-      '/scam-alerts/analyze',
-      body: request.toJson(),
+      '/scams/analyze',
+      body: <String, dynamic>{
+        'message': request.message ?? '',
+        'source': 'manual',
+      },
     );
     if (body == null) {
       throw AppException(code: 'INVALID_RESPONSE', message: 'Scam analysis response was empty.');
     }
-    return ScamExplanation.fromJson(body);
+    final reasons = _indicatorStrings(body['indicators']);
+    final actions = (body['recommended_actions'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .where((s) => s.isNotEmpty)
+            .toList() ??
+        <String>[];
+    final riskLevel = body['risk_level'] as String? ?? 'low';
+    final score = body['risk_score'];
+    final explanation = (body['explanation'] as String?)?.trim();
+    return ScamExplanation(
+      summary: (explanation != null && explanation.isNotEmpty)
+          ? explanation
+          : 'Risk level: $riskLevel${score != null ? ' ($score/100)' : ''}',
+      reasons: reasons.isEmpty ? <String>['No strong indicators detected.'] : reasons,
+      safeAction: actions.isNotEmpty
+          ? actions.first
+          : 'Do not share your OTP, UPI PIN or password. Verify via your bank’s official app or customer care.',
+    );
   }
 
   @override
   Future<List<ScamAlert>> getScamAlerts() async {
-    final body = await _apiClient.get('/scam-alerts');
-    if (body == null) return <ScamAlert>[];
-    final list = body['scam_alerts'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => ScamAlert.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    await _ensureReady();
+    final body = await _apiClient.get('/scams');
+    return _itemsOf(body, 'scam_alerts').map((raw) {
+      final json = Map<String, dynamic>.from(raw as Map);
+      final reasons = _indicatorStrings(json['indicators']);
+      return ScamAlert(
+        id: json['id']?.toString() ?? '',
+        riskScore: _asInt(json['risk_score']),
+        riskLevel: json['risk_level']?.toString() ?? 'low',
+        verdict: json['verdict']?.toString() ?? 'safe',
+        indicators: reasons,
+        explanation: json['explanation']?.toString() ?? '',
+        status: json['status']?.toString() ?? 'new',
+      );
+    }).toList();
   }
 
   // ========================================================================
-  // Tax
+  // Tax comparison
   // ========================================================================
 
   @override
   Future<TaxComparison> compareTax(TaxComparisonRequest request) async {
+    await _ensureReady();
+    // The backend expects annual_salary_paise plus itemised deductions and a
+    // rules-backed financial year. The UI collects one deduction total, which
+    // is mapped to Section 80C (see docs/API_INTEGRATION.md).
     final body = await _apiClient.post(
       '/tax/compare',
-      body: request.toJson(),
+      body: <String, dynamic>{
+        'financial_year': _supportedTaxYear,
+        'annual_salary_paise': request.annualIncomePaise,
+        'deductions': <String, dynamic>{
+          'section_80c_paise': request.deductionsPaise,
+        },
+      },
     );
     if (body == null) {
       throw AppException(code: 'INVALID_RESPONSE', message: 'Tax comparison response was empty.');
     }
-    return TaxComparison.fromJson(body);
+    final oldRegime = Map<String, dynamic>.from(body['old_regime'] as Map? ?? {});
+    final newRegime = Map<String, dynamic>.from(body['new_regime'] as Map? ?? {});
+    return TaxComparison(
+      taxYear: body['financial_year']?.toString() ?? _supportedTaxYear,
+      oldRegime: TaxRegimeResult.fromJson(oldRegime),
+      newRegime: TaxRegimeResult.fromJson(newRegime),
+      recommendedLowerTaxRegime:
+          body['lower_tax_regime']?.toString() ?? 'new',
+      estimatedDifferencePaise: _asInt(body['estimated_savings_paise']),
+      disclaimer: body['disclaimer']?.toString() ??
+          'Illustrative guidance only. Verify applicable rules.',
+    );
   }
 
   // ========================================================================
@@ -300,23 +369,57 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<BusinessCashflow> getBusinessCashflow() async {
+    await _ensureReady();
     final body = await _apiClient.get('/business/cashflow');
     if (body == null) {
       throw AppException(code: 'INVALID_RESPONSE', message: 'Business cashflow response was empty.');
     }
-    return BusinessCashflow.fromJson(body);
+    return BusinessCashflow(
+      salesPaise: _asInt(body['total_sales_paise']),
+      expensesPaise: _asInt(body['total_expenses_paise']),
+      receivablesPaise: _asInt(body['pending_receivables_paise']),
+      payablesPaise: _asInt(body['pending_payables_paise']),
+      projectedCashBalancePaise: _asInt(body['projected_cash_balance_paise']),
+      period: body['forecast_date']?.toString() ?? 'current_month',
+    );
   }
 
   // ========================================================================
-  // Investments
+  // Investments (simulated, educational)
   // ========================================================================
 
   @override
   Future<List<InvestmentSummary>> getInvestmentSummary() async {
+    await _ensureReady();
     final body = await _apiClient.get('/investments/summary');
-    if (body == null) return <InvestmentSummary>[];
-    final list = body['investments'] as List<dynamic>? ?? <dynamic>[];
-    return list.map((e) => InvestmentSummary.fromJson(Map<String, dynamic>.from(e as Map))).toList();
+    if (body == null) {
+      throw AppException(code: 'INVALID_RESPONSE', message: 'Investment response was empty.');
+    }
+
+    // Contract-style list (used by the mock fixtures) if present.
+    if (body['investments'] is List) {
+      return (body['investments'] as List<dynamic>)
+          .map((e) => InvestmentSummary.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+
+    // Backend returns a single summary with a portfolio allocation.
+    final disclaimer = body['educational_disclaimer']?.toString() ??
+        'Simulated educational data. Not a real investment.';
+    final portfolio = body['portfolio'] as List<dynamic>? ?? <dynamic>[];
+    return portfolio.map((raw) {
+      final asset = Map<String, dynamic>.from(raw as Map);
+      final value = _asInt(asset['value_paise']);
+      return InvestmentSummary(
+        label: asset['asset_name']?.toString() ?? 'Asset',
+        investedAmountPaise: value,
+        currentValuePaise: value,
+        gainLossPaise: 0,
+        returnPercent: 0,
+        assetClass: asset['asset_type']?.toString() ?? 'equity',
+        note: '${asset['weight_percent'] ?? 0}% weight · $disclaimer',
+      );
+    }).toList();
   }
 
   // ========================================================================
@@ -325,21 +428,58 @@ class LiveFinanceRepository implements FinanceRepository {
 
   @override
   Future<bool> getNotificationsEnabled() async {
+    await _ensureReady();
     return _prefs?.getBool('dueswise_notifications') ?? true;
   }
 
   @override
   Future<void> setNotificationsEnabled(bool enabled) async {
+    await _ensureReady();
     await _prefs?.setBool('dueswise_notifications', enabled);
   }
 
   @override
   Future<int> getWeeklyNudgeCap() async {
+    await _ensureReady();
     return _prefs?.getInt('dueswise_nudge_cap') ?? AppConstants.weeklyNudgeCap;
   }
 
   @override
   Future<void> setWeeklyNudgeCap(int cap) async {
+    await _ensureReady();
     await _prefs?.setInt('dueswise_nudge_cap', cap.clamp(1, 10));
+  }
+
+  // ========================================================================
+  // Helpers
+  // ========================================================================
+
+  /// Read a list from responses that may use `items` or the contract key.
+  List<dynamic> _itemsOf(Map<String, dynamic>? body, String contractKey) {
+    if (body == null) return <dynamic>[];
+    final raw = body['items'] ?? body[contractKey];
+    return raw is List ? raw : <dynamic>[];
+  }
+
+  /// Backend scam indicators are `{code, description}` objects.
+  List<String> _indicatorStrings(dynamic indicators) {
+    if (indicators is! List) return <String>[];
+    return indicators
+        .map((i) {
+          if (i is Map) {
+            final description = i['description']?.toString();
+            if (description != null && description.isNotEmpty) return description;
+            return i['code']?.toString() ?? '';
+          }
+          return i.toString();
+        })
+        .where((s) => s.isNotEmpty)
+        .toList();
+  }
+
+  int _asInt(dynamic v) {
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v?.toString() ?? '') ?? 0;
   }
 }

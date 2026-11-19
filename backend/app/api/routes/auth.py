@@ -52,8 +52,10 @@ def demo_session(request: DemoRequest, db: DbSession):
             persona=user.persona,
             currency=user.currency,
         ),
+        user_id=user.id,
         access_token=user.id,
         token_type="bearer",
+        expires_in_minutes=30,
     )
 
 

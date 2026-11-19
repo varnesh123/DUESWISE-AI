@@ -1,0 +1,5 @@
+tags:
+  integration:
+    # These tests need a running backend and use real HTTP.
+    # They skip themselves when LIVE_BACKEND is not provided.
+    skip: false

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/config/app_config.dart';
 import 'package:dueswise/core/constants/app_constants.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/utils/money.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/transaction.dart';
@@ -24,6 +24,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   String? _categoryFilter;
   String _query = '';
   bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -32,13 +33,18 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   Future<void> _load() async {
-    final txns = await _repo.getTransactions();
-    if (mounted) {
-      setState(() {
-        _transactions = txns;
-        _applyFilters();
-        _loading = false;
-      });
+    try {
+      final txns = await _repo.getTransactions();
+      if (mounted) {
+        setState(() {
+          _transactions = txns;
+          _applyFilters();
+          _loading = false;
+          _error = null;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() { _loading = false; _error = e.toString(); });
     }
   }
 
@@ -70,7 +76,12 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: _loading
           ? const LoadingState(message: 'Loading transactions…')
-          : Column(
+          : _error != null
+              ? ErrorState(
+                  exception: AppException(code: 'LOAD_ERROR', message: _error!),
+                  onRetry: _load,
+                )
+              : Column(
               children: [
                 // Filter bar
                 Container(
@@ -140,7 +151,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                                   '${t.isCredit ? '+' : '-'}${t.amount.toInrWhole()}',
                                   style: TextStyle(fontWeight: FontWeight.w700, color: t.isCredit ? AppTheme.success : AppTheme.primary),
                                 ),
-                                onTap: () => context.pushNamed('${AppRoutes.transactionDetail}${t.id}'),
+                                onTap: () => context.push('${AppRoutes.transactionDetail}${t.id}'),
                               ),
                             );
                           },

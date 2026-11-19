@@ -79,7 +79,7 @@ class _PersonaSelectionScreenState extends State<PersonaSelectionScreen> {
               child: FilledButton(
                 onPressed: () async {
                   await _repo.selectPersona(_selected);
-                  if (mounted) context.pushReplacementNamed(AppRoutes.dashboard);
+                  if (mounted) context.go(AppRoutes.dashboard);
                 },
                 child: const Text('Continue'),
               ),

@@ -41,7 +41,8 @@ class _TaxComparisonScreenState extends State<TaxComparisonScreen> {
     setState(() { _loading = true; _error = null; _result = null; });
     try {
       final result = await _repo.compareTax(TaxComparisonRequest(
-        financialYear: '2026-27',
+        // Rules currently shipped with the backend: FY-2025-26.
+        financialYear: 'FY-2025-26',
         annualIncomePaise: income * 100,
         deductionsPaise: deductions * 100,
       ));
