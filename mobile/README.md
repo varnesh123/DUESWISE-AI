@@ -104,7 +104,7 @@ Every data screen has loading, empty, error-with-retry and success states.
 
 ```bash
 cd mobile
-dart analyze          # 0 errors
+dart analyze          # 0 errors, 0 warnings
 flutter test          # 45 tests
 ```
 
