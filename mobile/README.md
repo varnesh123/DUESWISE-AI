@@ -7,11 +7,14 @@ It runs fully offline in **mock mode** and can switch to the live backend.
 
 | Tool | Version |
 |---|---|
-| Flutter | **3.35+** (Dart 3.9+) — verified with Flutter 3.35.7 / Dart 3.9.2 |
+| Flutter | **3.35+** (Dart 3.9+) — verified with Flutter 3.50.0 / Dart 3.14.0 |
 | Backend (live mode) | see `../backend/README.md` |
 
 > Older SDKs fail dependency resolution: `flutter_localizations` pins `intl 0.20.2`,
 > which older Dart SDKs cannot satisfy.
+>
+> The committed `pubspec.lock` was resolved with Flutter 3.50.0 (Dart 3.13+). On
+> Flutter 3.35–3.4x, run `flutter pub get` once to re-resolve it for your SDK.
 
 ## Install and run
 

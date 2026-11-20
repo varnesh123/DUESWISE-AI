@@ -1,22 +1,32 @@
-```markdown
 <div align="center">
 
 # 💸 DuesWise-AI
 
-**Spend smart, stay ahead.**  
-*An AI-assisted personal finance copilot for India — built around deterministic money rules, synthetic demo personas, and an optional AI microservice.*
+**Spend smart, stay ahead.**
+
+An AI-assisted personal finance copilot for India — deterministic money rules, synthetic demo personas, and an optional AI microservice.
 
 [![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](#prerequisites)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-009688?style=for-the-badge&logo=fastapi&logoColor=white)](#technology-stack)
 [![Flutter](https://img.shields.io/badge/Flutter-3.35%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white)](#prerequisites)
-[![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](#architecture-overview)
-[![Tests](https://img.shields.io/badge/Tests-310%20Passing-2EA44F?style=for-the-badge&logo=githubactions&logoColor=white)](#testing)
+[![SQLite](https://img.shields.io/badge/SQLite-Local-003B57?style=for-the-badge&logo=sqlite&logoColor=white)](#architecture)
+[![Tests](https://img.shields.io/badge/Tests-310%20verified-2EA44F?style=for-the-badge&logo=checkmarx&logoColor=white)](#testing)
 
 > **Hackathon MVP** · No real-money transactions · No trading · No bank credentials · 100% synthetic data
 
-[Quick Start](#-installation) • [Architecture](#-architecture-overview) • [API Reference](#-api-documentation) • [Test Suite](#-testing) • [Docs](#-further-documentation)
+[Quick Start](#-installation) • [Architecture](#-architecture) • [API Reference](#-api-documentation) • [Testing](#-testing) • [Docs](#-further-documentation)
 
 </div>
+
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/welcome.png" alt="DuesWise welcome screen" width="250" />
+  <img src="docs/screenshots/persona-selection.png" alt="Demo persona selection" width="250" />
+  <img src="docs/screenshots/dashboard.png" alt="DuesWise dashboard" width="250" />
+</p>
 
 ---
 
@@ -29,19 +39,23 @@
 2. [Problem & Solution](#-problem--solution)
 3. [Key Features](#-key-features)
 4. [How It Works](#-how-it-works)
-5. [Architecture Overview](#-architecture-overview)
+5. [Architecture](#-architecture)
 6. [Technology Stack](#-technology-stack)
 7. [Repository Structure](#-repository-structure)
 8. [Prerequisites](#-prerequisites)
 9. [Installation](#-installation)
-10. [Running the Services](#-running-the-services)
-11. [Environment Variables](#-environment-variables)
+10. [Environment Configuration](#-environment-configuration)
+11. [Running the Services](#-running-the-services)
 12. [Mock Mode vs Live Mode](#-mock-mode-vs-live-mode)
 13. [API Documentation](#-api-documentation)
 14. [Testing](#-testing)
 15. [Troubleshooting](#-troubleshooting)
-16. [Current Limitations & Roadmap](#-current-limitations--roadmap)
-17. [Contributing & Further Documentation](#-contributing--further-documentation)
+16. [Security](#-security)
+17. [Limitations](#-limitations)
+18. [Roadmap](#-roadmap)
+19. [Contributing](#-contributing)
+20. [License](#-license)
+21. [Acknowledgements](#-acknowledgements)
 
 </details>
 
@@ -49,37 +63,42 @@
 
 ## 🚀 Introduction
 
-**DuesWise-AI** is a mobile-first personal finance assistant tailored for three Indian financial personas: **salaried employees**, **young professionals**, and **small shopkeepers**. It calculates what is genuinely safe to spend after upcoming obligations, flags recurring subscriptions, analyzes suspicious SMS/UPI messages for scam indicators, and compares India's Old vs. New income tax regimes.
+**DuesWise-AI** is a mobile-first personal finance assistant tailored for three Indian financial personas: **salaried employees**, **young professionals**, and **small shopkeepers**. It calculates what is genuinely safe to spend after upcoming obligations, tracks recurring subscriptions, analyses suspicious SMS/UPI messages for scam indicators, and compares India's Old vs. New income-tax regimes.
 
-Every financial calculation is **100% deterministic** and computed in **integer paise** (never floating-point). The standalone AI microservice only *phrases* text (merchant normalization) and is strictly optional—if unavailable, the core app continues working seamlessly.
+Every financial calculation is **deterministic** and computed in **integer paise** (never floating-point). The standalone AI microservice only *phrases* text and normalises merchant names; it is optional. If it is unavailable, the core application keeps working.
 
 ---
 
 ## 🎯 Problem & Solution
 
-### The Problem
+### The problem
+
 Indian salaried individuals, young professionals, and small merchants frequently struggle to:
+
 - Track fragmented recurring subscriptions, EMIs, rent, and utility bills.
 - Know how much balance is truly **safe to spend** before the next payday.
 - Compare the **Old vs. New income-tax regimes** without manual spreadsheets.
 - Spot phishing and **UPI-fraud messages** before clicking malicious links.
 - Track small-business cash flow, receivables, and payables.
 
-### Our Solution
-- 📱 **Flutter Mobile & Web App:** Works offline out-of-the-box in mock mode and switches cleanly to a live backend.
-- ⚙️ **FastAPI Core Backend:** Owns all deterministic money rules, persistence, demo sessions, and business logic.
-- 🧠 **Decoupled AI Microservice:** Normalizes messy merchant strings with deterministic dictionary/heuristic fallbacks and zero financial authority.
+### Our solution
+
+- 📱 **Flutter mobile & web app** — works offline in mock mode and switches cleanly to a live backend.
+- ⚙️ **FastAPI core backend** — owns all deterministic money rules, persistence, demo sessions, and business logic.
+- 🧠 **Decoupled AI microservice** — normalises messy merchant strings with deterministic dictionary/heuristic fallbacks and has zero financial authority.
 
 ---
 
 ## ✨ Key Features
+
+All features below are implemented in this repository.
 
 | Module | Capabilities |
 | :--- | :--- |
 | 📊 **Dashboard** | Available balance, **safe-to-spend**, upcoming dues total, safety reserve, next due, and recent transactions |
 | 💳 **Transactions** | Search, category filters, manual entry, SMS parsing, CSV/PDF statement upload, and AA-style mock ingestion |
 | 📅 **Dues Tracker** | Upcoming, paid, and overdue bills with one-tap mark-as-paid, creation, and updates |
-| 🔄 **Subscriptions** | Automated recurring payment detection with user confirmation or dismissal |
+| 🔄 **Subscriptions** | Detection of recurring payments with user confirmation or dismissal |
 | 💡 **Smart Nudges** | Priority-ordered financial insights with read/dismiss state tracking |
 | 🛡️ **Scam Detection** | Deterministic risk score, red-flag indicators, recommended actions, and stored alerts |
 | 🧾 **Tax Comparison** | Old vs. New regime breakdown driven by configurable rule files (`FY-2025-26`) |
@@ -87,21 +106,22 @@ Indian salaried individuals, young professionals, and small merchants frequently
 | 📈 **Investments** | Simulated, educational portfolio summary (strictly non-transactional) |
 | 👤 **Demo Personas** | Instant switching across *Salaried*, *Young Professional*, and *Shopkeeper* synthetic profiles |
 | 📴 **Offline Mock Mode** | Complete mock repository powered by bundled JSON fixtures |
+| 🧠 **Optional AI Normalisation** | Merchant normalisation through the AI service when `AI_ENABLED=true` |
 
 ---
 
 ## ⚙️ How It Works
 
-1. **Zero-Config Startup:** The app launches in **mock mode** (`USE_MOCK_API=true`) and is immediately usable without running any servers.
-2. **Demo Authentication:** In **live mode**, the client requests a synthetic demo session (`POST /api/v1/auth/demo`) and receives an opaque bearer token.
-3. **Clean Repository Abstraction:** Every screen talks to `FinanceRepository`; `LiveFinanceRepository` maps backend payloads to UI models.
-4. **Deterministic Backend Engine:** FastAPI validates inputs, runs integer-paise financial rules (safe-to-spend, tax, recurring detection, scam scoring), and persists to SQLite.
-5. **Graceful AI Fallback:** When `AI_ENABLED=true`, the backend queries `ai_service` to normalize unknown merchants—falling back silently to local rules on timeout or failure.
-6. **Uniform Error Handling:** Errors follow a single contract (`{"error": {"code", "message", "details"}}`) surfaced as retryable UI states.
+1. **Zero-config startup** — the app launches in **mock mode** (`USE_MOCK_API=true`) and is immediately usable without running any servers.
+2. **Demo authentication** — in **live mode**, the client requests a synthetic demo session (`POST /api/v1/auth/demo`) and receives an opaque bearer token.
+3. **Clean repository abstraction** — every screen talks to `FinanceRepository`; `LiveFinanceRepository` maps backend payloads to UI models.
+4. **Deterministic backend engine** — FastAPI validates inputs, runs integer-paise financial rules (safe-to-spend, tax, recurring detection, scam scoring), and persists to SQLite.
+5. **Graceful AI fallback** — when `AI_ENABLED=true`, the backend queries the AI service to normalise unknown merchants, falling back silently to local rules on timeout or failure.
+6. **Uniform error handling** — errors follow a single contract (`{"error": {"code", "message", "details"}}`) surfaced as retryable UI states.
 
 ---
 
-## 🏗️ Architecture Overview
+## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
@@ -119,17 +139,15 @@ flowchart LR
 
     Flutter -->|"HTTP JSON + Bearer Token"| API
     API -->|"SQLAlchemy 2.x"| DB
-    API -->|"Merchant Normalization<br/>(Optional · AI_ENABLED)"| AI
-    AI -.->|"Only if provider configured"| LLM
-
+    API -->|"Merchant normalisation<br/>(optional · AI_ENABLED)"| AI
+    AI -.->|"Only if a provider is configured"| LLM
 ```
 
-> **Architectural Guardrails:**
-> * Flutter **never** communicates directly with the AI service.
-> * The AI service has **no database** and **never** computes financial numbers.
-> * Safe-to-spend and scam risk scores are always computed deterministically by the backend.
-> 
-> 
+> **Architectural guardrails**
+>
+> - Flutter **never** communicates directly with the AI service.
+> - The AI service has **no database** and **never** computes authoritative financial numbers.
+> - Safe-to-spend, tax, and scam-risk results are always computed deterministically by the backend.
 
 ---
 
@@ -137,11 +155,11 @@ flowchart LR
 
 | Layer | Technologies |
 | --- | --- |
-| **Mobile & Web UI** | Flutter (Material 3), Dart, GoRouter, Riverpod, `http`, `shared_preferences`, `intl` |
+| **Mobile & Web UI** | Flutter (Material 3), Dart, GoRouter, `http`, `shared_preferences` |
 | **Core Backend** | Python 3.11+, FastAPI, Pydantic v2, SQLAlchemy 2.x, SQLite, Uvicorn |
 | **AI Microservice** | Python 3.11+, FastAPI, Pydantic v2, HTTPX, Uvicorn |
 | **Document Parsing** | `pdfplumber` (text-based PDF statements), multipart CSV upload |
-| **Testing & QA** | `pytest`, FastAPI `TestClient`, `flutter_test`, `dart analyze` |
+| **Testing & QA** | `pytest`, FastAPI `TestClient`, `flutter_test`, `flutter analyze` |
 | **Data & Money** | Integer paise arithmetic, deterministic synthetic personas, JSON rule engines |
 
 ---
@@ -168,11 +186,12 @@ DUESWISE-AI/
 ├── ai_service/                 # Decoupled AI microservice (port 8001)
 │   ├── app/                    # main, config, routes, schemas, services, utils
 │   ├── tests/                  # 81 unit tests (no live LLM calls)
+│   ├── .env.example
 │   └── requirements-dev.txt
 │
 ├── mobile/                     # Flutter client (Android, iOS, Web)
 │   ├── lib/
-│   │   ├── app/                # MaterialApp, GoRouter, repository providers
+│   │   ├── app/                # MaterialApp, GoRouter, repository provider
 │   │   ├── config/             # USE_MOCK_API & BACKEND_BASE_URL flags
 │   │   ├── core/               # Theme, paise formatter, error models, widgets
 │   │   ├── data/               # Models, mock & live repository implementations
@@ -181,120 +200,70 @@ DUESWISE-AI/
 │   ├── assets/mock_data/       # Deterministic offline JSON fixtures
 │   └── test/                   # 45 offline tests + 9 live HTTP integration tests
 │
-├── docs/                       # Architecture, setup, and API integration guides
+├── docs/                       # Architecture, setup, API integration, screenshots
 ├── BLUEPRINT.md                # Product blueprint & deterministic business rules
 ├── CONTRACTS.md                # API contract & as-built notes
 └── README.md
-
 ```
 
 ---
 
 ## 📋 Prerequisites
 
-| Tool | Minimum Version | Notes |
+| Tool | Minimum version | Notes |
 | --- | --- | --- |
-| **Python** | `3.11+` | Required for `backend/` and `ai_service/` |
-| **Flutter SDK** | `3.35+` (Dart `3.9+`) | Verified on Flutter `3.35.7` / Dart `3.9.2` |
-| **SQLite** | Bundled | Included with Python standard library |
-| **Emulator / Chrome** | Optional | For running Flutter mobile or web targets |
+| **Python** | `3.11+` | Required for `backend/` and `ai_service/`. Verified on Python `3.14.5`. |
+| **Flutter SDK** | `3.35+` (Dart `3.9+`) | Verified on Flutter `3.50.0` / Dart `3.14.0`. The declared SDK floor is Dart `3.3.0`. |
+| **SQLite** | Bundled | Included with Python's standard library. |
+| **Emulator / Chrome** | Optional | For running Flutter mobile or web targets. |
 
-> ⚠️ **SDK Note:** Flutter `3.24` / Dart `3.5` cannot resolve dependencies because `flutter_localizations` pins `intl 0.20.2`. Use Flutter `3.35+`.
+> ⚠️ **SDK note:** Flutter `3.24` / Dart `3.5` cannot resolve the pinned `intl 0.20.2` dependency. Use Flutter `3.35+`.
+>
+> The committed `mobile/pubspec.lock` was resolved with Flutter `3.50.0` (Dart `3.13+`). If you use Flutter `3.35`–`3.4x`, run `flutter pub get` once to re-resolve the lockfile for your SDK; the application code itself does not depend on the newer SDK.
 
 ---
 
 ## 💻 Installation
 
 ```bash
-git clone [https://github.com/varnesh123/DUESWISE-AI.git](https://github.com/varnesh123/DUESWISE-AI.git)
+git clone https://github.com/varnesh123/DUESWISE-AI.git
 cd DUESWISE-AI
 
-# 1. Create and activate Python virtual environment
+# 1. Create and activate a Python virtual environment
 python3 -m venv .venv
 source .venv/bin/activate          # Windows PowerShell: .venv\Scripts\Activate.ps1
 
-# 2. Install Backend & AI Service dependencies
+# 2. Install backend and AI service dependencies
 pip install -r backend/requirements.txt
 pip install -r ai_service/requirements-dev.txt
 
 # 3. Install Flutter dependencies
-cd mobile && flutter pub get && cd ..
-
+cd mobile
+flutter pub get
+cd ..
 ```
+
+The repository uses one virtual environment for both Python services. Per-component
+virtual environments also work; run each command from inside the relevant directory.
 
 ---
 
-## ▶️ Running the Services
+## 🔧 Environment Configuration
 
-### 1. Start the Core Backend (Port `8000`)
-
-```bash
-cd backend
-cp .env.example .env               # Optional: defaults work out of the box
-uvicorn app.main:app --reload --port 8000
-
-```
-
-* **Health Check:** `http://localhost:8000/health` → `{"status":"ok"}`
-* **Swagger UI:** `http://localhost:8000/docs`
-
-### 2. Start the AI Microservice (Port `8001`)
+Both Python services ship safe, working defaults. Copying the templates is optional:
 
 ```bash
-cd ai_service
-cp .env.example .env               # Optional: runs deterministically by default
-uvicorn app.main:app --reload --port 8001
-
+cp backend/.env.example backend/.env
+cp ai_service/.env.example ai_service/.env
 ```
 
-* **Health Check:** `http://localhost:8001/health` → `{"status":"ok"}`
-* **Swagger UI:** `http://localhost:8001/docs`
-
-To connect the backend to the AI service, enable it in `backend/.env`:
-
-```env
-AI_ENABLED=true
-AI_SERVICE_BASE_URL=http://localhost:8001
-
-```
-
-*(With `AI_PROVIDER=none`, the AI service normalizes merchants using its curated dictionary—no API key needed.)*
-
-### 3. Run the Flutter App
-
-**Offline Mock Mode (Default — no backend needed):**
-
-```bash
-cd mobile
-flutter run              # Connected device or emulator
-flutter run -d chrome    # Web browser
-
-```
-
-**Live Mode (Connects to FastAPI backend):**
-
-```bash
-cd mobile
-flutter run \
-  --dart-define=USE_MOCK_API=false \
-  --dart-define=BACKEND_BASE_URL=[http://10.0.2.2:8000](http://10.0.2.2:8000)
-
-```
-
-| Target Platform | `BACKEND_BASE_URL` |
-| --- | --- |
-| **Android Emulator** | `http://10.0.2.2:8000` |
-| **iOS Simulator / Desktop / Web** | `http://localhost:8000` |
-| **Physical Device (LAN)** | `http://<YOUR-LOCAL-IP>:8000` |
-
----
-
-## 🔧 Environment Variables
+### Backend (`backend/.env`)
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `DATABASE_URL` | `sqlite:///./dueswise.db` | SQLAlchemy connection string |
-| `APP_ENV` / `DEBUG` | `development` / `true` | Runtime environment & debug flag |
+| `APP_ENV` / `DEBUG` | `development` / `true` | Runtime environment and debug flag |
+| `API_PREFIX` | `/api/v1` | Versioned API prefix |
 | `AI_ENABLED` | `false` | Toggle backend → AI service calls |
 | `AI_SERVICE_BASE_URL` | `http://localhost:8001` | AI microservice base URL |
 | `AI_TIMEOUT_SECONDS` | `5` | Timeout per AI request |
@@ -304,91 +273,193 @@ flutter run \
 | `FORECAST_HORIZON_DAYS` | `30` | Lookahead window for safe-to-spend |
 | `SAFETY_RESERVE_PERCENT` | `10` | Buffer reserve percentage |
 | `MAX_NUDGES_PER_7_DAYS` | `3` | Nudge frequency cap |
-| `MAX_FILE_SIZE_MB` | `10` | Max CSV/PDF upload size |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `MAX_FILE_SIZE_MB` | `10` | Maximum CSV/PDF upload size |
+
+### AI service (`ai_service/.env`)
 
 | Variable | Default | Description |
 | --- | --- | --- |
 | `AI_PROVIDER` | `none` | `none`, `openai_compatible`, `openai`, or `groq` |
-| `AI_API_KEY` | *(empty)* | Provider API key (never commit) |
+| `AI_API_KEY` | *(empty)* | Provider API key — never commit it |
 | `AI_MODEL` | *(empty)* | Model identifier |
 | `AI_BASE_URL` | *(empty)* | Custom OpenAI-compatible endpoint |
 | `AI_TIMEOUT_SECONDS` | `5` | Provider timeout |
+| `AI_MAX_RETRIES` | `1` | Provider retry count |
 | `HOST` / `PORT` | `0.0.0.0` / `8001` | Server bind address |
+| `LOG_LEVEL` | `INFO` | Logging level |
+| `CORS_ALLOW_ORIGINS` | *(empty)* | Comma-separated origins; middleware disabled when empty |
 
-*(Note: `LLM_*` variable names are also accepted as aliases.)*
+`LLM_*` names are also accepted as aliases for the `AI_*` provider settings.
+
+### Flutter build flags (`--dart-define`)
 
 | Flag | Default | Description |
 | --- | --- | --- |
-| `USE_MOCK_API` | `true` | `true` uses bundled JSON fixtures; `false` calls live backend |
+| `USE_MOCK_API` | `true` | `true` uses bundled JSON fixtures; `false` calls the live backend |
 | `BACKEND_BASE_URL` | `http://localhost:8000` | Backend API origin |
+
+---
+
+## ▶️ Running the Services
+
+Start each service in its own terminal. The backend and Flutter app are required for
+live mode; the AI service is optional. If you enable AI, start it before the backend
+so the backend's first health check succeeds.
+
+### 1. Core backend (port `8000`)
+
+```bash
+cd backend
+python3 -m uvicorn app.main:app --reload --port 8000
+```
+
+- **Health check:** `http://localhost:8000/health` → `{"status":"ok"}`
+- **Swagger UI:** `http://localhost:8000/docs`
+- **OpenAPI JSON:** `http://localhost:8000/openapi.json`
+
+The SQLite file (`backend/dueswise.db`) is created on first startup.
+
+### 2. AI microservice (port `8001`, optional)
+
+```bash
+cd ai_service
+python3 -m uvicorn app.main:app --reload --port 8001
+```
+
+- **Health check:** `http://localhost:8001/health` → `{"status":"ok"}`
+- **Swagger UI:** `http://localhost:8001/docs`
+
+To connect the backend to it, set the following in `backend/.env` and restart the backend:
+
+```env
+AI_ENABLED=true
+AI_SERVICE_BASE_URL=http://localhost:8001
+```
+
+With `AI_PROVIDER=none`, the AI service normalises merchants from its curated
+dictionary — no API key is needed.
+
+### 3. Flutter app
+
+**Offline mock mode (default — no backend needed):**
+
+```bash
+cd mobile
+flutter run              # Connected device or emulator
+flutter run -d chrome    # Web browser
+```
+
+**Live mode (connects to the FastAPI backend):**
+
+```bash
+cd mobile
+flutter run \
+  --dart-define=USE_MOCK_API=false \
+  --dart-define=BACKEND_BASE_URL=http://10.0.2.2:8000
+```
+
+| Target platform | `BACKEND_BASE_URL` |
+| --- | --- |
+| **Android emulator** | `http://10.0.2.2:8000` |
+| **iOS simulator / desktop / web** | `http://localhost:8000` |
+| **Physical device (LAN)** | `http://<YOUR-LOCAL-IP>:8000` |
 
 ---
 
 ## 🔄 Mock Mode vs Live Mode
 
-| Aspect | Mock Mode (`USE_MOCK_API=true`) | Live Mode (`USE_MOCK_API=false`) |
+| Aspect | Mock mode (`USE_MOCK_API=true`) | Live mode (`USE_MOCK_API=false`) |
 | --- | --- | --- |
-| **Servers Required** | None | Backend (and optionally AI Service) |
-| **Data Source** | `mobile/assets/mock_data/*.json` | SQLite via FastAPI REST API |
-| **Authentication** | Simulated locally | Synthetic demo session + Bearer token |
+| **Servers required** | None | Backend (and optionally AI service) |
+| **Data source** | `mobile/assets/mock_data/*.json` | SQLite via FastAPI REST API |
+| **Authentication** | Simulated locally | Synthetic demo session + bearer token |
 | **Persistence** | In-memory session only | Persisted in `backend/dueswise.db` |
-| **Best For** | Offline demos, UI work, quick previews | End-to-end verification & live testing |
+| **Best for** | Offline demos, UI work, quick previews | End-to-end verification and live testing |
 
 ---
 
 ## 📡 API Documentation
 
-Interactive OpenAPI docs are available automatically when the services are running:
+Interactive OpenAPI documentation is available automatically when the services run:
 
-* **Backend Swagger:** `http://localhost:8000/docs` (`openapi.json` at `/openapi.json`)
-* **AI Service Swagger:** `http://localhost:8001/docs`
+- **Backend Swagger UI:** `http://localhost:8000/docs`
+- **Backend ReDoc:** `http://localhost:8000/redoc`
+- **Backend OpenAPI JSON:** `http://localhost:8000/openapi.json`
+- **AI service Swagger UI:** `http://localhost:8001/docs`
+- **AI service OpenAPI JSON:** `http://localhost:8001/openapi.json`
 
-### Core Endpoints
+All versioned endpoints live under `/api/v1`. `GET /health` is unversioned.
+
+### Core endpoints
 
 ```http
-POST   /api/v1/auth/demo                    # Create a synthetic demo session
-GET    /api/v1/dashboard/summary            # Safe-to-spend & financial summary
-GET    /api/v1/transactions                 # List & filter transactions
-POST   /api/v1/transactions/ingest          # Manual entry or SMS text ingestion
-POST   /api/v1/transactions/ingest/file     # CSV / PDF bank statement upload
-GET    /api/v1/dues/{due_id}                # Inspect a specific due
-POST   /api/v1/dues/{due_id}/mark-paid      # Mark a due as paid
-GET    /api/v1/subscriptions                # List detected recurring subscriptions
-GET    /api/v1/nudges                       # Fetch prioritized financial insights
-POST   /api/v1/scams/analyze                # Deterministic SMS/UPI scam analysis
-POST   /api/v1/tax/compare                  # Old vs. New Indian tax regime comparison
-GET    /api/v1/business/cashflow            # Small-business cash flow overview
-GET    /api/v1/investments/summary          # Simulated portfolio summary
-
+POST   /api/v1/auth/demo                     # Create a synthetic demo session
+GET    /api/v1/auth/me                       # Current demo user
+GET    /api/v1/dashboard/summary             # Safe-to-spend & financial summary
+GET    /api/v1/transactions                  # List & filter transactions
+POST   /api/v1/transactions/ingest           # Manual entry or SMS text ingestion
+POST   /api/v1/transactions/ingest/file      # CSV / PDF bank statement upload
+GET    /api/v1/dues                          # List dues
+POST   /api/v1/dues/{due_id}/mark-paid       # Mark a due as paid
+GET    /api/v1/subscriptions                 # List detected recurring subscriptions
+GET    /api/v1/nudges                        # Fetch prioritised financial insights
+POST   /api/v1/scams/analyze                 # Deterministic SMS/UPI scam analysis
+POST   /api/v1/tax/compare                   # Old vs. New Indian tax regime comparison
+GET    /api/v1/business/cashflow             # Small-business cash flow overview
+GET    /api/v1/investments/summary           # Simulated portfolio summary
+GET    /api/v1/system/status                 # App metadata + database status
 ```
+
+The AI service exposes `POST /api/v1/ai/merchant-normalize`,
+`POST /api/v1/ai/explain-scam`, and `POST /api/v1/ai/generate-nudge`. Only merchant
+normalisation is currently called by the backend.
+
+See [`docs/API_INTEGRATION.md`](docs/API_INTEGRATION.md) for the full Flutter ⇄ backend
+mapping and [`backend/README.md`](backend/README.md) for every endpoint.
 
 ---
 
 ## 🧪 Testing
 
-All test suites are verified and passing across the stack:
+All suites were executed for this release with the following results.
 
-| Test Suite | Command | Tests | Status |
-| --- | --- | --- | --- |
-| **Backend (Unit + API)** | `cd backend && pytest -q` | **175** | ✅ Passing |
-| **AI Microservice** | `cd ai_service && pytest -q` | **81** | ✅ Passing |
-| **Flutter (Unit + Widget)** | `cd mobile && flutter test` | **45** | ✅ Passing |
-| **Flutter ⇄ Backend Live E2E** | See command below | **9** | ✅ Passing |
-| **Dart Static Analysis** | `cd mobile && dart analyze` | — | ✅ 0 Errors |
+| Suite | Command | Passed | Failed | Skipped | Status |
+| --- | --- | ---: | ---: | ---: | --- |
+| **Backend (unit + API)** | `cd backend && python3 -m pytest -q` | 175 | 0 | 0 | ✅ |
+| **AI microservice** | `cd ai_service && python3 -m pytest -q` | 81 | 0 | 0 | ✅ |
+| **Flutter (unit + widget)** | `cd mobile && flutter test` | 45 | 0 | 1 suite | ✅ |
+| **Flutter ⇄ Backend live E2E** | see below | 9 | 0 | 0 | ✅ |
+| **Flutter static analysis** | `cd mobile && flutter analyze` | 0 errors | — | — | ✅ |
 
-### Running the Live HTTP Integration Suite
+> The default `flutter test` run reports `45 passed, 1 skipped`: the live HTTP suite
+> skips itself unless `LIVE_BACKEND` is supplied. Static analysis currently reports
+> **0 errors**, 33 warnings, and 122 informational lints.
 
-Start the backend on port `8099` and the AI service on port `8001`, then run:
+### Running the live HTTP integration suite
+
+Start the AI service on port `8001`, then the backend on port `8099` with an isolated database:
 
 ```bash
+# terminal 1 — AI service
+cd ai_service && python3 -m uvicorn app.main:app --port 8001
+
+# terminal 2 — backend with AI enabled
+cd backend
+DATABASE_URL=sqlite:////tmp/dueswise_e2e.db \
+AI_ENABLED=true \
+AI_SERVICE_BASE_URL=http://127.0.0.1:8001 \
+python3 -m uvicorn app.main:app --port 8099
+
+# terminal 3 — Flutter live tests
 cd mobile
 flutter test test/integration/live_backend_test.dart \
-  --dart-define=LIVE_BACKEND=[http://127.0.0.1:8099](http://127.0.0.1:8099) \
+  --dart-define=LIVE_BACKEND=http://127.0.0.1:8099 \
   --dart-define=EXPECT_AI=true
-
 ```
 
-*(Automatically skipped during standard `flutter test` runs when `LIVE_BACKEND` is unset.)*
+`EXPECT_AI=true` asserts that the backend actually called the AI service during
+ingestion. Remove the two `--dart-define` flags to run the offline suite only.
 
 ---
 
@@ -396,50 +467,120 @@ flutter test test/integration/live_backend_test.dart \
 
 | Issue | Resolution |
 | --- | --- |
-| `version solving failed` on `intl` | Upgrade Flutter SDK to `3.35+` (Dart `3.9+`). |
-| `Address already in use` | Another process is occupying port `8000` or `8001`; stop it or pass `--port`. |
-| `UNAUTHORIZED` error in live mode | Session expired or backend restarted; return to login and start a new demo session. |
-| Android emulator can't reach backend | Use `http://10.0.2.2:8000` instead of `localhost`. |
-| `merchant_normalize` isn't called | Ensure `AI_ENABLED=true` in `backend/.env` and `ai_service` is running on port `8001`. |
+| `version solving failed` on `intl` | Upgrade Flutter to `3.35+` (Dart `3.9+`). |
+| `ModuleNotFoundError: app` | Run `uvicorn`/`pytest` from inside `backend/` or `ai_service/`. |
+| `Address already in use` | Another process is using port `8000`, `8001`, or `8099`; stop it or pass `--port`. |
+| `UNAUTHORIZED` in live mode | The demo session expired or the backend restarted; log in again. |
+| Android emulator cannot reach the backend | Use `http://10.0.2.2:8000` instead of `localhost`. |
+| `merchant_normalize` is not called | Set `AI_ENABLED=true` in `backend/.env` and confirm port `8001` is healthy. |
 | PDF upload fails | Only text-based PDFs are supported; scanned image PDFs are not parsed. |
+| App stuck on a loading screen | The backend is unreachable; check `BACKEND_BASE_URL` and the retryable error screen. |
+| `pubspec.lock` missing after clone | Run `flutter pub get`. |
+| Reset local backend state | `rm -f backend/dueswise.db` and restart. |
 
 ---
 
-## 📌 Current Limitations & Roadmap
+## 🔒 Security
 
-### Current Limitations
+- **No real financial data.** Every persona and transaction is synthetic. The app
+  never asks for bank credentials, card numbers, or real UPI IDs.
+- **Secrets stay in `.env`.** `.env` files are ignored by Git; only `.env.example`
+  templates are committed. No API keys are hardcoded.
+- **Demo authentication only.** Tokens are synthetic user UUIDs. There is no
+  password store, registration, or token-expiry enforcement. Do **not** treat this
+  as production authentication.
+- **AI privacy.** In the wired flow, the AI service receives only the merchant text
+  needed for normalisation. Prompts are masked and truncated; OTP/PIN/password
+  values are redacted; request bodies are never logged. The AI service is stateless
+  and stores no user data.
+- **Conservative CORS.** The AI service's CORS middleware is disabled unless
+  `CORS_ALLOW_ORIGINS` is set.
+- **No secrets found.** A repository-wide scan of tracked files found no committed
+  credentials. If a credential is ever exposed, rotate it immediately.
 
-* **Demo Authentication Only:** Uses synthetic user UUID tokens without passwords, registration, or token expiry enforcement.
-* **Heuristic Calculations:** Safe-to-spend, scam scoring, and `FY-2025-26` tax rules (`unverified`) are deterministic educational models, not certified financial/legal advice.
-* **Simulated Investments:** Portfolio data is mock/educational—no live market feeds or brokerage integrations.
-* **AI Scope:** Only merchant normalization is wired into the backend flow; AI scam explanations and nudge phrasing endpoints remain decoupled.
+See [`ai_service/README.md`](ai_service/README.md#privacy-and-security-design) for
+the full AI privacy design.
 
-### Future Improvements
+---
 
-* Production JWT/OAuth2 authentication with hashed credentials and refresh tokens.
-* PostgreSQL + Alembic database migrations for multi-tenant production deployment.
-* Full integration of AI nudge phrasing and scam explanation endpoints with strict output validation.
-* Multi-year verified Indian tax rule tables and scheduled push notifications.
+## ⚠️ Limitations
+
+- **Demo authentication only** — no passwords, registration, or enforced token expiry.
+- **Heuristic financial rules** — safe-to-spend, scam scoring, and the `FY-2025-26`
+  tax rules are deterministic educational models, not certified financial or legal advice.
+- **Simulated investments** — no live market feeds or brokerage integrations.
+- **AI scope** — only merchant normalisation is wired into the backend. Scam
+  explanations and nudge phrasing endpoints exist and are tested, but the backend
+  currently generates its own deterministic text for those flows.
+- **SQLite only** — no PostgreSQL or migration tooling yet.
+- **No CI pipeline** — tests are run locally; there is no GitHub Actions workflow or
+  device farm.
 
 ---
 
-## 🤝 Contributing & Further Documentation
+## 🗺️ Roadmap
 
-### Contributing
+### Completed
 
-1. Fork the repo and branch off `main`: `git checkout -b feature/your-feature`
-2. Keep business logic in backend services and UI behind `FinanceRepository`.
-3. Represent all monetary amounts as **integer paise**—never floats.
-4. Ensure `pytest -q`, `dart analyze`, and `flutter test` pass before opening a PR.
+- [x] Deterministic safe-to-spend engine with disclosed components
+- [x] Transaction ingestion (manual, SMS, CSV/PDF, AA-style mock)
+- [x] Dues, subscriptions, nudges, scam detection, tax comparison
+- [x] Business cash flow and simulated investments
+- [x] Three synthetic demo personas
+- [x] Flutter mock and live repositories with offline fixtures
+- [x] Optional AI merchant-normalisation service with deterministic fallback
+- [x] 310 automated tests across backend, AI service, and Flutter (including live E2E)
 
-### Further Documentation
+### Planned
 
-* 📐 [docs/ARCHITECTURE.md](https://www.google.com/search?q=docs/ARCHITECTURE.md) — System layers, data flow, and design decisions
-* 🛠️ [docs/SETUP.md](https://www.google.com/search?q=docs/SETUP.md) — Step-by-step local environment setup
-* 🔌 [docs/API_INTEGRATION.md](https://www.google.com/search?q=docs/API_INTEGRATION.md) — Flutter ⇄ Backend endpoint mapping
-* 📦 [backend/README.md](https://www.google.com/search?q=backend/README.md) · [mobile/README.md](https://www.google.com/search?q=mobile/README.md) · [ai_service/README.md](https://www.google.com/search?q=ai_service/README.md) — Component-level guides
-* 📋 [BLUEPRINT.md](BLUEPRINT.md) & [CONTRACTS.md](CONTRACTS.md) — Product blueprint and API contracts
+- [ ] Production JWT/OAuth2 authentication with hashed credentials and refresh tokens
+- [ ] PostgreSQL + Alembic migrations for multi-tenant deployment
+- [ ] Wire AI scam-explanation and nudge-phrasing endpoints into backend flows
+- [ ] Multi-year verified Indian tax rule tables
+- [ ] Scheduled push notifications
+- [ ] CI pipeline with automated test and analysis gates
 
 ---
+
+## 🤝 Contributing
+
+1. Fork the repository and branch from `main`:
+   ```bash
+   git checkout -b feature/your-feature
+   ```
+2. Keep business logic in backend services and keep UI behind `FinanceRepository`.
+3. Represent every monetary amount as **integer paise** — never floats.
+4. Run the relevant checks before opening a pull request:
+   ```bash
+   cd backend && python3 -m pytest -q
+   cd ../ai_service && python3 -m pytest -q
+   cd ../mobile && flutter analyze && flutter test
+   ```
+5. Describe the change, the tests you ran, and any contract impact in the pull request.
+
+Please do not commit `.env` files, databases, build output, or real personal data.
+
+---
+
+## 📄 License
+
+**No license file is present in this repository.** The source is publicly visible, but
+that does not grant permission to copy, modify, or redistribute it. Add a `LICENSE`
+file (for example MIT or Apache-2.0) before using this code outside its own repository.
+
+---
+
+## 🙏 Acknowledgements
+
+Built with the open-source [FastAPI](https://fastapi.tiangolo.com/),
+[Flutter](https://flutter.dev/), [SQLAlchemy](https://www.sqlalchemy.org/), and
+[Pydantic](https://docs.pydantic.dev/) ecosystems. All demo data is synthetic and was
+created for this project.
+
+---
+
+<div align="center">
 
 **DuesWise-AI** — *Spend smart, stay ahead.*
+
+</div>

@@ -24,7 +24,7 @@ flowchart TB
 - **Contract:** every screen depends on `FinanceRepository` only.
 - **Implementations:** `MockFinanceRepository` (bundled fixtures) and `LiveFinanceRepository` (HTTP).
 - **Adapter boundary:** `LiveFinanceRepository` is the single place that knows backend envelopes (`items`), demo auth, and field-name differences.
-- **State:** local `StatefulWidget` state plus Riverpod provisioning for repository access.
+- **State:** local `StatefulWidget` state plus a static `AppRepository` provider that selects the mock or live repository at startup.
 - **Navigation:** GoRouter with path-based navigation (`context.go` / `context.push`).
 
 ### Backend (`backend/`)
