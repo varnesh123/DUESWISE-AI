@@ -434,7 +434,7 @@ All suites were executed for this release with the following results.
 
 > The default `flutter test` run reports `45 passed, 1 skipped`: the live HTTP suite
 > skips itself unless `LIVE_BACKEND` is supplied. Static analysis currently reports
-> **0 errors**, 33 warnings, and 122 informational lints.
+> **0 errors**, 0 warnings, and 122 informational lints.
 
 ### Running the live HTTP integration suite
 
