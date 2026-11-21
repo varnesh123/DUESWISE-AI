@@ -16,6 +16,8 @@ class PersonaSelectionScreen extends StatefulWidget {
 
 class _PersonaSelectionScreenState extends State<PersonaSelectionScreen> {
   DemoPersona _selected = DemoPersona.salaried;
+  bool _loading = false;
+  String? _error;
   final FinanceRepository _repo = AppRepository.instance;
 
   @override
@@ -70,16 +72,45 @@ class _PersonaSelectionScreenState extends State<PersonaSelectionScreen> {
                 },
               ),
             ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  _error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: AppTheme.danger),
+                ),
+              ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               height: 52,
               child: FilledButton(
-                onPressed: () async {
-                  await _repo.selectPersona(_selected);
-                  if (mounted) context.go(AppRoutes.dashboard);
-                },
-                child: const Text('Continue'),
+                onPressed: _loading
+                    ? null
+                    : () async {
+                        setState(() {
+                          _loading = true;
+                          _error = null;
+                        });
+                        try {
+                          await _repo.loginDemo(_selected);
+                          if (mounted) context.go(AppRoutes.dashboard);
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() => _error = 'Could not start demo mode: $e');
+                          }
+                        } finally {
+                          if (mounted) setState(() => _loading = false);
+                        }
+                      },
+                child: _loading
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Continue with demo data'),
               ),
             ),
             const SizedBox(height: 24),

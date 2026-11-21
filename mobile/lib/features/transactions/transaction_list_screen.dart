@@ -7,6 +7,7 @@ import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/transaction.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
+import 'package:dueswise/features/transactions/transaction_form_sheet.dart';
 
 /// Transaction list with search + category filter.
 class TransactionListScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   List<Transaction> _filtered = [];
   String? _categoryFilter;
   String _query = '';
+  String _sort = 'date_desc';
   bool _loading = true;
   String? _error;
 
@@ -56,7 +58,29 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       final q = _query.toLowerCase();
       result = result.where((t) => t.displayMerchant.toLowerCase().contains(q) || (t.category ?? '').toLowerCase().contains(q)).toList();
     }
+    switch (_sort) {
+      case 'date_asc':
+        result = [...result]
+          ..sort((a, b) => a.transactionDate.compareTo(b.transactionDate));
+        break;
+      case 'amount_desc':
+        result = [...result]
+          ..sort((a, b) => b.amountPaise.compareTo(a.amountPaise));
+        break;
+      case 'amount_asc':
+        result = [...result]
+          ..sort((a, b) => a.amountPaise.compareTo(b.amountPaise));
+        break;
+      default:
+        result = [...result]
+          ..sort((a, b) => b.transactionDate.compareTo(a.transactionDate));
+    }
     setState(() => _filtered = result);
+  }
+
+  Future<void> _addTransaction() async {
+    final saved = await showTransactionFormSheet(context);
+    if (saved == true) await _load();
   }
 
   @override
@@ -66,12 +90,27 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       appBar: AppBar(
         title: const Text('Transactions'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.file_upload_outlined),
-            onPressed: () => _showIngestDialog(context),
-            tooltip: 'Import transaction',
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Sort transactions',
+            initialValue: _sort,
+            onSelected: (value) => setState(() {
+              _sort = value;
+              _applyFilters();
+            }),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'date_desc', child: Text('Newest first')),
+              PopupMenuItem(value: 'date_asc', child: Text('Oldest first')),
+              PopupMenuItem(value: 'amount_desc', child: Text('Amount: high to low')),
+              PopupMenuItem(value: 'amount_asc', child: Text('Amount: low to high')),
+            ],
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _loading ? null : _addTransaction,
+        icon: const Icon(Icons.add),
+        label: const Text('Add'),
       ),
       body: _loading
           ? const LoadingState(message: 'Loading transactions…')
@@ -124,10 +163,14 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                 // List
                 Expanded(
                   child: _filtered.isEmpty
-                      ? const EmptyState(
+                      ? EmptyState(
                           icon: Icons.receipt_long_outlined,
-                          title: 'No matching transactions',
-                          message: 'Try a different search or category filter.',
+                          title: _transactions.isEmpty
+                              ? 'No transactions yet'
+                              : 'No matching transactions',
+                          message: _transactions.isEmpty
+                              ? 'Add your first transaction with the + button.'
+                              : 'Try a different search, category, or sort.',
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.all(16),
@@ -161,41 +204,4 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
     );
   }
 
-  Future<void> _showIngestDialog(BuildContext context) async {
-    final merchant = TextEditingController();
-    final amount = TextEditingController();
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Import transaction (demo)'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: merchant, decoration: const InputDecoration(labelText: 'Merchant', hintText: 'NETFLIX')),
-            const SizedBox(height: 12),
-            TextField(controller: amount, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount (₹)', hintText: '899')),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(
-            onPressed: () {
-              final a = int.tryParse(amount.text) ?? 0;
-              Navigator.pop(context, {'merchant_raw': merchant.text, 'amount_paise': a * 100, 'transaction_type': 'debit', 'category': 'other'});
-            },
-            child: const Text('Import'),
-          ),
-        ],
-      ),
-    );
-    if (result != null && mounted) {
-      try {
-        await _repo.ingestTransaction(result);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Transaction imported')));
-        _load();
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Import failed: $e'), backgroundColor: AppTheme.danger));
-      }
-    }
-  }
 }

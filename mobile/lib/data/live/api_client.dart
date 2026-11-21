@@ -145,6 +145,9 @@ class ApiClient {
   }) =>
       _request('PATCH', path, body: body, includeAuth: includeAuth);
 
+  Future<Map<String, dynamic>?> delete(String path, {bool includeAuth = true}) =>
+      _request('DELETE', path, includeAuth: includeAuth);
+
   void dispose() {
     _client.close();
   }

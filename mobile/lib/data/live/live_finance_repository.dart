@@ -18,7 +18,9 @@ import 'package:dueswise/config/app_config.dart';
 import 'package:dueswise/core/constants/app_constants.dart';
 import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/data/live/api_client.dart' hide NotFoundException;
+import 'package:dueswise/data/live/token_store.dart';
 import 'package:dueswise/data/models/auth_result.dart';
+import 'package:dueswise/data/models/auth_user.dart';
 import 'package:dueswise/data/models/business_cashflow.dart';
 import 'package:dueswise/data/models/dashboard_summary.dart';
 import 'package:dueswise/data/models/due.dart';
@@ -30,9 +32,6 @@ import 'package:dueswise/data/models/tax_comparison.dart';
 import 'package:dueswise/data/models/transaction.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
 
-/// Key under which the access token is persisted.
-const String _tokenKey = 'dueswise_access_token';
-
 /// Key under which the selected persona index is persisted.
 const String _personaKey = 'dueswise_selected_persona';
 
@@ -42,14 +41,16 @@ const String _supportedTaxYear = 'FY-2025-26';
 
 /// Live repository backed by HTTP calls to the main backend.
 class LiveFinanceRepository implements FinanceRepository {
-  LiveFinanceRepository({ApiClient? apiClient}) {
+  LiveFinanceRepository({ApiClient? apiClient, TokenStore? tokenStore}) {
     _apiClient = apiClient ?? ApiClient(baseUrl: AppConfig.backendBaseUrl);
+    _tokenStore = tokenStore ?? SecureTokenStore();
     _prefs = null;
     _selectedPersona = DemoPersona.salaried;
     _initFuture = _loadTokenAndPersona();
   }
 
   late final ApiClient _apiClient;
+  late final TokenStore _tokenStore;
   SharedPreferences? _prefs;
   late DemoPersona _selectedPersona;
   Future<void>? _initFuture;
@@ -61,7 +62,7 @@ class LiveFinanceRepository implements FinanceRepository {
 
   Future<void> _loadTokenAndPersona() async {
     _prefs = await SharedPreferences.getInstance();
-    final token = _prefs?.getString(_tokenKey);
+    final token = await _tokenStore.read();
     _apiClient.setAccessToken(token);
     final personaIndex = _prefs?.getInt(_personaKey) ?? 0;
     _selectedPersona = DemoPersona.values[personaIndex.clamp(0, DemoPersona.values.length - 1)];
@@ -81,7 +82,7 @@ class LiveFinanceRepository implements FinanceRepository {
   }
 
   // ========================================================================
-  // Authentication (synthetic demo session — no real credentials)
+  // Authentication (real accounts + explicit demo sessions)
   // ========================================================================
 
   /// Map the UI persona to the backend's demo persona key.
@@ -100,18 +101,39 @@ class LiveFinanceRepository implements FinanceRepository {
   Future<AuthResult> login(String email, String password) async {
     await _ensureReady();
     final body = await _apiClient.post(
-      '/auth/demo',
-      body: <String, dynamic>{'persona': _backendPersonaKey(_selectedPersona)},
+      '/auth/login',
+      body: <String, dynamic>{'email': email.trim(), 'password': password},
       includeAuth: false,
     );
     return _parseAuthResult(body);
   }
 
-  /// The MVP has no real account system: "register" starts the same synthetic
-  /// demo session for the selected persona. See docs/API_INTEGRATION.md.
   @override
   Future<AuthResult> register(String email, String password, String name) async {
-    return login(email, password);
+    await _ensureReady();
+    final body = await _apiClient.post(
+      '/auth/register',
+      body: <String, dynamic>{
+        'name': name.trim(),
+        'email': email.trim(),
+        'password': password,
+      },
+      includeAuth: false,
+    );
+    return _parseAuthResult(body);
+  }
+
+  @override
+  Future<AuthResult> loginDemo(DemoPersona persona) async {
+    await _ensureReady();
+    _selectedPersona = persona;
+    await _prefs?.setInt(_personaKey, DemoPersona.values.indexOf(persona));
+    final body = await _apiClient.post(
+      '/auth/demo',
+      body: <String, dynamic>{'persona': _backendPersonaKey(persona)},
+      includeAuth: false,
+    );
+    return _parseAuthResult(body);
   }
 
   Future<AuthResult> _parseAuthResult(Map<String, dynamic>? body) async {
@@ -123,19 +145,34 @@ class LiveFinanceRepository implements FinanceRepository {
     }
     final result = AuthResult.fromJson(body);
     if (result.accessToken.isNotEmpty) {
-      await _apiClient.persistToken(result.accessToken, (t) async {
-        await _prefs?.setString(_tokenKey, t ?? '');
-      });
+      await _apiClient.persistToken(result.accessToken, _tokenStore.write);
     }
     return result;
   }
 
   @override
+  Future<AuthUser> getCurrentUser() async {
+    await _ensureReady();
+    final body = await _apiClient.get('/auth/me');
+    if (body == null) {
+      throw AppException(
+        code: 'INVALID_RESPONSE',
+        message: 'Account response was empty.',
+      );
+    }
+    return AuthUser.fromJson(body);
+  }
+
+  @override
   Future<void> logout() async {
     await _ensureReady();
-    await _apiClient.clearToken((t) async {
-      await _prefs?.setString(_tokenKey, t ?? '');
-    });
+    // Best-effort server revocation; always clear the local token.
+    try {
+      await _apiClient.post('/auth/logout');
+    } catch (_) {
+      // Offline or already-expired sessions are still cleared locally.
+    }
+    await _apiClient.clearToken(_tokenStore.write);
     _selectedPersona = DemoPersona.salaried;
     await _prefs?.setInt(_personaKey, 0);
   }
@@ -193,6 +230,72 @@ class LiveFinanceRepository implements FinanceRepository {
     return IngestedTransaction.fromJson(body);
   }
 
+  @override
+  Future<Transaction> createTransaction({
+    required int amountPaise,
+    required String transactionType,
+    required String merchant,
+    String? category,
+    String paymentMethod = 'upi',
+    String? transactionDate,
+    String? description,
+  }) async {
+    await _ensureReady();
+    final date = transactionDate ?? DateTime.now().toIso8601String().split('T').first;
+    final body = await _apiClient.post(
+      '/transactions/manual',
+      body: <String, dynamic>{
+        'amount_paise': amountPaise,
+        'transaction_type': transactionType,
+        'merchant': merchant,
+        if (category != null && category.isNotEmpty) 'category': category,
+        'payment_method': paymentMethod,
+        'transaction_date': date,
+        if (description != null && description.isNotEmpty) 'description': description,
+      },
+    );
+    if (body == null) {
+      throw AppException(code: 'INVALID_RESPONSE', message: 'Transaction response was empty.');
+    }
+    return Transaction.fromJson(body);
+  }
+
+  @override
+  Future<Transaction> updateTransaction(
+    String id, {
+    int? amountPaise,
+    String? transactionType,
+    String? merchant,
+    String? category,
+    String? paymentMethod,
+    String? transactionDate,
+    String? description,
+  }) async {
+    await _ensureReady();
+    final body = await _apiClient.patch(
+      '/transactions/$id',
+      body: <String, dynamic>{
+        if (amountPaise != null) 'amount_paise': amountPaise,
+        if (transactionType != null) 'transaction_type': transactionType,
+        if (merchant != null) 'merchant': merchant,
+        if (category != null) 'category': category,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+        if (transactionDate != null) 'transaction_date': transactionDate,
+        if (description != null) 'description': description,
+      },
+    );
+    if (body == null) {
+      throw AppException(code: 'INVALID_RESPONSE', message: 'Transaction response was empty.');
+    }
+    return Transaction.fromJson(body);
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    await _ensureReady();
+    await _apiClient.delete('/transactions/$id');
+  }
+
   // ========================================================================
   // Dues
   // ========================================================================
@@ -224,6 +327,69 @@ class LiveFinanceRepository implements FinanceRepository {
       '/dues/$dueId/mark-paid',
       body: <String, dynamic>{'paid_date': today},
     );
+  }
+
+  @override
+  Future<Due> createDue({
+    required String title,
+    required String dueType,
+    required int amountPaise,
+    required String dueDate,
+    String frequency = 'monthly',
+    bool isMandatory = true,
+  }) async {
+    await _ensureReady();
+    final body = await _apiClient.post(
+      '/dues',
+      body: <String, dynamic>{
+        'title': title,
+        'due_type': dueType,
+        'amount_paise': amountPaise,
+        'due_date': dueDate,
+        'frequency': frequency,
+        'is_mandatory': isMandatory,
+      },
+    );
+    if (body == null) {
+      throw AppException(code: 'INVALID_RESPONSE', message: 'Due response was empty.');
+    }
+    return Due.fromJson(body);
+  }
+
+  @override
+  Future<Due> updateDue(
+    String id, {
+    String? title,
+    String? dueType,
+    int? amountPaise,
+    String? dueDate,
+    String? frequency,
+    bool? isMandatory,
+    String? status,
+  }) async {
+    await _ensureReady();
+    final body = await _apiClient.patch(
+      '/dues/$id',
+      body: <String, dynamic>{
+        if (title != null) 'title': title,
+        if (dueType != null) 'due_type': dueType,
+        if (amountPaise != null) 'amount_paise': amountPaise,
+        if (dueDate != null) 'due_date': dueDate,
+        if (frequency != null) 'frequency': frequency,
+        if (isMandatory != null) 'is_mandatory': isMandatory,
+        if (status != null) 'status': status,
+      },
+    );
+    if (body == null) {
+      throw AppException(code: 'INVALID_RESPONSE', message: 'Due response was empty.');
+    }
+    return Due.fromJson(body);
+  }
+
+  @override
+  Future<void> deleteDue(String id) async {
+    await _ensureReady();
+    await _apiClient.delete('/dues/$id');
   }
 
   // ========================================================================

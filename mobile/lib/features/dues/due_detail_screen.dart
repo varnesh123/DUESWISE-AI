@@ -4,8 +4,9 @@ import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/models/due.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
+import 'package:dueswise/features/dues/due_form_sheet.dart';
 
-/// Due detail with mark-as-paid action.
+/// Due detail with edit, delete, and mark-as-paid actions.
 class DueDetailScreen extends StatefulWidget {
   final String dueId;
   const DueDetailScreen({super.key, required this.dueId});
@@ -35,11 +36,72 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
     }
   }
 
+  Future<void> _edit() async {
+    final due = _due;
+    if (due == null) return;
+    final saved = await showDueFormSheet(context, due: due);
+    if (saved == true) await _load();
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete due?'),
+        content: const Text('This removes the due from your account.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(backgroundColor: AppTheme.danger),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await _repo.deleteDue(widget.dueId);
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Due deleted')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not delete: $e'),
+            backgroundColor: AppTheme.danger,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(title: const Text('Due details')),
+      appBar: AppBar(
+        title: const Text('Due details'),
+        actions: [
+          IconButton(
+            onPressed: _due == null ? null : _edit,
+            icon: const Icon(Icons.edit_outlined),
+            tooltip: 'Edit',
+          ),
+          IconButton(
+            onPressed: _due == null ? null : _delete,
+            icon: const Icon(Icons.delete_outline),
+            tooltip: 'Delete',
+          ),
+        ],
+      ),
       body: _loading
           ? const LoadingState()
           : _error != null
@@ -83,6 +145,7 @@ class _DueDetailScreenState extends State<DueDetailScreen> {
                             const SizedBox(height: 16),
                             _row(context, 'Amount', _due!.amount.toInr()),
                             _row(context, 'Due date', _due!.dueDate),
+                            _row(context, 'Frequency', _due!.frequency),
                             _row(context, 'Type', _due!.dueType.toUpperCase()),
                             _row(context, 'Status', _due!.status.toUpperCase()),
                             _row(context, 'Mandatory', _due!.isMandatory ? 'Yes' : 'No'),

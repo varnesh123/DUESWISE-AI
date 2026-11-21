@@ -5,6 +5,7 @@
 import 'mock_data_loader.dart';
 
 import '../models/auth_result.dart';
+import '../models/auth_user.dart';
 import '../models/business_cashflow.dart';
 import '../models/dashboard_summary.dart';
 import '../models/investment_summary.dart';
@@ -92,6 +93,26 @@ class MockFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<AuthUser> getCurrentUser() async {
+    return AuthUser(
+      id: 'user_${_selectedPersona.name}',
+      name: _selectedPersona.label,
+      persona: _selectedPersona.name,
+      isDemo: true,
+    );
+  }
+
+  @override
+  Future<AuthResult> loginDemo(DemoPersona persona) async {
+    await selectPersona(persona);
+    return AuthResult(
+      accessToken: 'mock_access_token_${persona.name}',
+      userId: 'user_${persona.name}',
+      expiresInMinutes: 30,
+    );
+  }
+
+  @override
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 300));
   }
@@ -130,6 +151,75 @@ class MockFinanceRepository implements FinanceRepository {
     );
   }
 
+  @override
+  Future<Transaction> createTransaction({
+    required int amountPaise,
+    required String transactionType,
+    required String merchant,
+    String? category,
+    String paymentMethod = 'upi',
+    String? transactionDate,
+    String? description,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final txn = Transaction(
+      id: 'mock_txn_${DateTime.now().microsecondsSinceEpoch}',
+      amountPaise: amountPaise,
+      currency: 'INR',
+      transactionType: transactionType,
+      merchantRaw: merchant,
+      merchantNormalized: merchant,
+      category: (category == null || category.isEmpty) ? 'other' : category,
+      paymentMethod: paymentMethod,
+      transactionDate:
+          transactionDate ?? DateTime.now().toIso8601String().split('T').first,
+      source: 'manual',
+      confidence: 1.0,
+    );
+    _transactions.insert(0, txn);
+    return txn;
+  }
+
+  @override
+  Future<Transaction> updateTransaction(
+    String id, {
+    int? amountPaise,
+    String? transactionType,
+    String? merchant,
+    String? category,
+    String? paymentMethod,
+    String? transactionDate,
+    String? description,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final index = _transactions.indexWhere((t) => t.id == id);
+    if (index < 0) throw StateError('Transaction not found');
+    final old = _transactions[index];
+    final updated = Transaction(
+      id: old.id,
+      amountPaise: amountPaise ?? old.amountPaise,
+      currency: old.currency,
+      transactionType: transactionType ?? old.transactionType,
+      merchantRaw: merchant ?? old.merchantRaw,
+      merchantNormalized: merchant ?? old.merchantNormalized,
+      category: category ?? old.category,
+      paymentMethod: paymentMethod ?? old.paymentMethod,
+      paymentApp: old.paymentApp,
+      gateway: old.gateway,
+      transactionDate: transactionDate ?? old.transactionDate,
+      source: old.source,
+      confidence: old.confidence,
+    );
+    _transactions[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> deleteTransaction(String id) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _transactions.removeWhere((t) => t.id == id);
+  }
+
   // ---- Dues ----
   @override
   Future<List<Due>> getDues() async {
@@ -148,6 +238,65 @@ class MockFinanceRepository implements FinanceRepository {
   Future<void> markDuePaid(String dueId) async {
     await Future.delayed(const Duration(milliseconds: 300));
     _dues = _dues.map((d) => d.id == dueId ? d.copyWith(status: 'paid') : d).toList();
+  }
+
+  @override
+  Future<Due> createDue({
+    required String title,
+    required String dueType,
+    required int amountPaise,
+    required String dueDate,
+    String frequency = 'monthly',
+    bool isMandatory = true,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final due = Due(
+      id: 'mock_due_${DateTime.now().microsecondsSinceEpoch}',
+      title: title,
+      dueType: dueType,
+      amountPaise: amountPaise,
+      dueDate: dueDate,
+      frequency: frequency,
+      status: 'upcoming',
+      isMandatory: isMandatory,
+      confidence: 1.0,
+    );
+    _dues.add(due);
+    _dues.sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    return due;
+  }
+
+  @override
+  Future<Due> updateDue(
+    String id, {
+    String? title,
+    String? dueType,
+    int? amountPaise,
+    String? dueDate,
+    String? frequency,
+    bool? isMandatory,
+    String? status,
+  }) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final index = _dues.indexWhere((d) => d.id == id);
+    if (index < 0) throw StateError('Due not found');
+    final updated = _dues[index].copyWith(
+      title: title,
+      dueType: dueType,
+      amountPaise: amountPaise,
+      dueDate: dueDate,
+      frequency: frequency,
+      isMandatory: isMandatory,
+      status: status,
+    );
+    _dues[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> deleteDue(String id) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    _dues.removeWhere((d) => d.id == id);
   }
 
   // ---- Subscriptions ----

@@ -37,8 +37,15 @@ class DueList(BaseModel):
 
 
 class DueUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    due_type: Optional[str] = Field(
+        None, description="rent/emi/insurance/utility/credit_card/subscription/other"
+    )
     amount_paise: Optional[int] = Field(None, ge=0)
     due_date: Optional[date] = None
+    frequency: Optional[str] = Field(
+        None, description="one_time/weekly/monthly/quarterly/yearly"
+    )
     status: Optional[str] = None
     is_mandatory: Optional[bool] = None
 

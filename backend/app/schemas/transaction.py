@@ -13,6 +13,16 @@ class TransactionCreate(BaseModel):
     transaction_date: str = Field(..., description="Transaction date YYYY-MM-DD")
 
 
+class TransactionUpdate(BaseModel):
+    amount_paise: Optional[int] = Field(None, ge=0)
+    transaction_type: Optional[str] = Field(None, description="credit or debit")
+    merchant: Optional[str] = Field(None, min_length=1, description="Merchant name")
+    category: Optional[str] = None
+    payment_method: Optional[str] = None
+    transaction_date: Optional[str] = None
+    description: Optional[str] = None
+
+
 class TransactionItem(BaseModel):
     id: str
     amount_paise: int

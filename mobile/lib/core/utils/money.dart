@@ -4,6 +4,28 @@
 /// Conversion to rupees for display happens only in the presentation layer.
 /// No floating-point arithmetic is used for financial values.
 
+/// Parse a user-entered rupee amount (for example "1,200.50" or "₹899")
+/// into integer paise. Returns null when the input is not a valid amount.
+///
+/// Parsing is done with string operations so no floating-point value ever
+/// touches a monetary amount.
+int? parseRupeesToPaise(String input) {
+  var text = input.trim().replaceAll(RegExp(r'[₹,\s]'), '');
+  if (text.isEmpty) return null;
+  if (text.startsWith('-')) return null;
+  final parts = text.split('.');
+  if (parts.length > 2) return null;
+  final rupees = int.tryParse(parts.isEmpty ? '' : parts[0]);
+  if (rupees == null || rupees < 0) return null;
+  var paise = 0;
+  if (parts.length == 2) {
+    final fraction = (parts[1] + '00').substring(0, 2);
+    paise = int.tryParse(fraction) ?? -1;
+    if (paise < 0 || paise > 99) return null;
+  }
+  return rupees * 100 + paise;
+}
+
 class Money {
   final int paise;
 

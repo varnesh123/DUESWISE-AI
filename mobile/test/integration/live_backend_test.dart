@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/data/live/api_client.dart' hide NotFoundException;
 import 'package:dueswise/data/live/live_finance_repository.dart';
+import 'package:dueswise/data/live/token_store.dart';
 import 'package:dueswise/data/models/auth_result.dart';
 import 'package:dueswise/data/models/scam_alert.dart';
 import 'package:dueswise/data/models/tax_comparison.dart';
@@ -45,20 +46,49 @@ void main() {
 
   late LiveFinanceRepository repo;
   late ApiClient authed;
+  final email = 'e2e-${DateTime.now().microsecondsSinceEpoch}@example.com';
+  const password = 'e2e-password-123';
 
   setUpAll(() {
     SharedPreferences.setMockInitialValues({});
-    repo = LiveFinanceRepository(apiClient: ApiClient(baseUrl: backendBase));
+    repo = LiveFinanceRepository(
+      apiClient: ApiClient(baseUrl: backendBase),
+      tokenStore: InMemoryTokenStore(),
+    );
     authed = ApiClient(baseUrl: backendBase);
   });
 
-  test('demo login issues a bearer token for the selected persona', () async {
-    await repo.selectPersona(DemoPersona.salaried);
-    final auth = await repo.login('demo@example.com', 'demo');
+  test('real registration creates an isolated account session', () async {
+    final auth = await repo.register(email, password, 'E2E User');
 
     expect(auth.accessToken, isNotEmpty);
     expect(auth.userId, isNotEmpty);
+    expect(auth.accessToken, isNot(auth.userId));
     authed.setAccessToken(auth.accessToken);
+
+    final user = await repo.getCurrentUser();
+    expect(user.email, email);
+    expect(user.isDemo, isFalse);
+  });
+
+  test('real login returns a fresh session token', () async {
+    final auth = await repo.login(email, password);
+    expect(auth.accessToken, isNotEmpty);
+    authed.setAccessToken(auth.accessToken);
+
+    final active = await repo.getCurrentUser();
+    expect(active.email, email);
+  });
+
+  test('explicit demo login still works for a persona', () async {
+    final demoRepo = LiveFinanceRepository(
+      apiClient: ApiClient(baseUrl: backendBase),
+      tokenStore: InMemoryTokenStore(),
+    );
+    final auth = await demoRepo.loginDemo(DemoPersona.salaried);
+    expect(auth.accessToken, isNotEmpty);
+    final user = await demoRepo.getCurrentUser();
+    expect(user.isDemo, isTrue);
   });
 
   test('dashboard summary loads from the live database', () async {
@@ -114,6 +144,34 @@ void main() {
 
     final all = await repo.getDues();
     expect(all.any((d) => d.id == dueId), isTrue);
+
+    await repo.deleteDue(dueId);
+    final afterDelete = await repo.getDues();
+    expect(afterDelete.any((d) => d.id == dueId), isFalse);
+  });
+
+  test('transactions can be created, edited, and deleted', () async {
+    final created = await repo.createTransaction(
+      amountPaise: 25000,
+      transactionType: 'debit',
+      merchant: 'E2E Cafe',
+      category: 'food',
+      paymentMethod: 'upi',
+    );
+    expect(created.amountPaise, 25000);
+    expect(created.source, 'manual');
+
+    final updated = await repo.updateTransaction(
+      created.id,
+      amountPaise: 30000,
+      merchant: 'E2E Cafe Updated',
+    );
+    expect(updated.amountPaise, 30000);
+    expect(updated.displayMerchant, 'E2E Cafe Updated');
+
+    await repo.deleteTransaction(created.id);
+    final remaining = await repo.getTransactions(query: 'E2E Cafe Updated');
+    expect(remaining, isEmpty);
   });
 
   test('subscriptions and nudges respond with list envelopes', () async {
@@ -161,8 +219,10 @@ void main() {
   });
 
   test('unauthenticated calls surface a typed error', () async {
-    SharedPreferences.setMockInitialValues({});
-    final fresh = LiveFinanceRepository(apiClient: ApiClient(baseUrl: backendBase));
+    final fresh = LiveFinanceRepository(
+      apiClient: ApiClient(baseUrl: backendBase),
+      tokenStore: InMemoryTokenStore(),
+    );
     try {
       await fresh.getDashboardSummary();
       fail('Expected an AppException for a missing bearer token');

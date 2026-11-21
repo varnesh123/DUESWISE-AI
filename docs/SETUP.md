@@ -4,14 +4,21 @@ This guide takes you from a fresh clone to a running app. Follow it in order.
 
 ## 0. What you need
 
-| Tool | Version | Check |
-|---|---|---|
-| Python | 3.11+ | `python3 --version` |
-| pip | any recent | `python3 -m pip --version` |
-| Flutter SDK | 3.35+ (Dart 3.9+) | `flutter --version` |
-| Git | any | `git --version` |
+| Tool | Minimum | Verified version in this release | Check |
+|---|---|---|---|
+| Python | 3.11+ | 3.14.5 | `python3 --version` |
+| pip | any recent | 26.1.1 | `python3 -m pip --version` |
+| Flutter SDK | 3.35+ | 3.50.0 (stable) | `flutter --version` |
+| Dart | 3.9+ | 3.14.0 | `dart --version` |
+| SQLite | bundled with Python | 3.50.4 | `python3 -c "import sqlite3; print(sqlite3.sqlite_version)"` |
+| Git | any | any | `git --version` |
 
-Optional: Android Studio or Xcode if you want to run on a device/emulator. Desktop or Chrome targets work too.
+Optional: Android Studio (Java 17 + Android SDK) or Xcode if you want to run on a device/emulator. Desktop or Chrome targets work too and need no extra SDK.
+
+> **Verified in this release:** backend tests (`185 passed`), AI tests (`81 passed`),
+> Flutter tests (`54 passed`), live E2E (`12 passed`), and
+> `flutter build web --release`. **Android was not verified** because no Java runtime or
+> Android SDK is installed on the verification machine.
 
 > **Do not use Flutter 3.24 or older.** `flutter_localizations` pins `intl 0.20.2`, and older Dart SDKs cannot resolve it.
 
@@ -49,7 +56,30 @@ curl -s http://localhost:8000/openapi.json | head -c 80
 
 First start creates `backend/dueswise.db`.
 
-### Create a demo session
+### Create a real account (recommended)
+
+```bash
+curl -s -X POST http://localhost:8000/api/v1/auth/register \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com","password":"at-least-8-chars","name":"Your Name"}'
+```
+
+The response contains `access_token` (an opaque session token, valid for 7 days) and
+`user`. Use it as a bearer token:
+
+```bash
+TOKEN=<access_token from the response>
+curl -s http://localhost:8000/api/v1/dashboard/summary \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+Sign in again at any time with `POST /api/v1/auth/login` using the same email/password.
+`POST /api/v1/auth/logout` revokes the current session. Passwords are stored only as
+PBKDF2-HMAC-SHA256 hashes; session tokens are stored only as SHA-256 digests.
+
+### Create a synthetic demo session (optional)
+
+Demo mode is deliberately separate from real accounts and never auto-logs-in.
 
 ```bash
 curl -s -X POST http://localhost:8000/api/v1/auth/demo \
@@ -128,28 +158,46 @@ Physical device: use `http://<your-computer-LAN-IP>:8000` and make sure the phon
 
 ### What to check in the app
 
-1. Welcome → **Continue** → persona selection.
-2. Log in (live mode shows a demo-mode note; any email/password works because it starts a synthetic persona session).
-3. Dashboard loads balance/safe-to-spend.
-4. Transactions → **+ Import** → enter a merchant and amount → the row appears and filters find it.
-5. Dues → open a due → **Mark as paid**.
-6. Subscriptions → confirm or dismiss.
-7. Insights → mark a nudge read.
-8. Scam detection → paste a sample → analyze.
-9. Tax → compare regimes.
-10. Business / Investments load.
+1. Welcome → **Create account** (or **Log in**) for a real, private account.
+   **Continue with demo data** is a separate button that starts a synthetic persona.
+2. After registering, the dashboard loads with a greeting and empty states.
+3. Transactions → **Add** → enter merchant, amount, type, category, date → save.
+   Edit or delete from the transaction detail screen; search and sort with the toolbar.
+4. Dues → **Add** → enter a title, amount, due date, type, frequency → save.
+   Open it to edit, delete, or mark it paid. Filter by status and sort.
+5. Subscriptions → confirm or dismiss.
+6. Insights → mark a nudge read.
+7. Scam detection → paste a sample → analyze.
+8. Tax → compare regimes.
+9. Business / Investments load.
+10. Settings → shows your account email and **Log out** revokes the session.
+
+Mock mode (`USE_MOCK_API=true`, the default) keeps everything in memory and never sends
+network requests. Live mode (`--dart-define=USE_MOCK_API=false`) uses the real backend,
+real accounts, and persistent records.
+
+### Android setup (only if you target Android)
+
+No Android SDK is required for web/desktop. To build an APK:
+
+1. Install Java 17 (for example Temurin) and Android Studio.
+2. In Android Studio, install the Android SDK and an emulator image.
+3. Accept licences: `flutter doctor --android-licenses`.
+4. Confirm with `flutter doctor` and `flutter devices`.
+5. Point the app at your machine with `--dart-define=BACKEND_BASE_URL=http://10.0.2.2:8000`
+   (the emulator's alias for your host).
 
 ## 5. Run the tests
 
 ```bash
-# Backend
+# Backend (185 tests)
 cd backend && pytest -q
 
-# AI service
+# AI service (81 tests)
 cd ai_service && pytest -q
 
-# Flutter
-cd mobile && dart analyze && flutter test
+# Flutter (54 tests; live HTTP suite skips without LIVE_BACKEND)
+cd mobile && flutter analyze && flutter test
 ```
 
 ### Live end-to-end test (real HTTP)
@@ -174,7 +222,7 @@ flutter test test/integration/live_backend_test.dart \
   --dart-define=EXPECT_AI=true
 ```
 
-Expected: 9 tests passing. `EXPECT_AI=true` asserts that the backend actually called the AI service during ingestion. Without `LIVE_BACKEND`, that suite is skipped.
+Expected: 12 tests passing. `EXPECT_AI=true` asserts that the backend actually called the AI service during ingestion. Without `LIVE_BACKEND`, that suite is skipped.
 
 ## 6. Ports at a glance
 
@@ -191,7 +239,9 @@ Expected: 9 tests passing. `EXPECT_AI=true` asserts that the backend actually ca
 | `version solving failed` for `intl` | Upgrade Flutter to 3.35+ (Dart 3.9+). |
 | `ModuleNotFoundError: app` | Run `uvicorn`/`pytest` from inside `backend/` or `ai_service/`. |
 | `Address already in use` | Stop the other process or pass `--port 8010`. |
-| 401 `AUTHENTICATION_REQUIRED` | You need `Authorization: Bearer <demo token>`; create a session first. |
+| 401 `AUTHENTICATION_REQUIRED` | Sign in again. You need `Authorization: Bearer <session token>`; register/login or create an explicit demo session first. |
+| 409 `DUPLICATE_RESOURCE` on register | That email already has an account; use **Log in** instead. |
+| Secure storage error on desktop/web tests | Tests fall back to `shared_preferences`; no action needed. On a real device, ensure Keychain/Keystore is available. |
 | Android emulator cannot connect | Use `10.0.2.2`, not `localhost`. |
 | AI features not used | Set `AI_ENABLED=true` and confirm `/health` on port 8001. |
 | App stuck on a loading screen | The backend is unreachable; the screen should show a retryable error. Check the base URL. |

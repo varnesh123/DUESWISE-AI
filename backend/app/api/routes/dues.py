@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.dependencies import DbSession, get_current_user
 from app.models.due import Due
@@ -134,16 +134,54 @@ def update_due(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Due not found",
         )
-    if payload.amount_paise is not None:
-        due.amount_paise = payload.amount_paise
-    if payload.due_date is not None:
-        due.due_date = payload.due_date
-    if payload.status is not None:
-        due.status = payload.status
-    if payload.is_mandatory is not None:
-        due.is_mandatory = payload.is_mandatory
-    db.flush()
-    return _due_to_item(due)
+
+    data = payload.model_dump(exclude_unset=True)
+    fields: dict = {}
+    if "title" in data and data["title"] is not None:
+        title = data["title"].strip()
+        if not title:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="title cannot be empty",
+            )
+        fields["title"] = title
+    if "due_type" in data and data["due_type"] is not None:
+        fields["due_type"] = data["due_type"]
+    if "frequency" in data and data["frequency"] is not None:
+        fields["frequency"] = data["frequency"]
+    if "amount_paise" in data and data["amount_paise"] is not None:
+        fields["amount_paise"] = data["amount_paise"]
+    if "due_date" in data and data["due_date"] is not None:
+        fields["due_date"] = data["due_date"]
+    if "status" in data and data["status"] is not None:
+        fields["status"] = data["status"]
+    if "is_mandatory" in data and data["is_mandatory"] is not None:
+        fields["is_mandatory"] = data["is_mandatory"]
+
+    updated = repo.update(due_id, current_user.id, **fields)
+    assert updated is not None  # existence checked above
+    return _due_to_item(updated)
+
+
+@router.delete(
+    "/dues/{due_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["dues"],
+    summary="Delete a due",
+)
+def delete_due(
+    due_id: str,
+    db: DbSession,
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a user-owned due."""
+    repo = DueRepository(db)
+    if not repo.delete(due_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Due not found",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

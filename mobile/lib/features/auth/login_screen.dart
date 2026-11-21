@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
-import 'package:dueswise/config/app_config.dart';
+import 'package:dueswise/core/errors/app_exception.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
 
-/// Login screen (mock behaviour — no real authentication).
+/// Login screen for real accounts.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,6 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  String? _error;
   final FinanceRepository _repo = AppRepository.instance;
 
   @override
@@ -30,20 +31,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final result = await _repo.login(_email.text.trim(), _password.text);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Logged in as ${result.userId}')),
-        );
-        context.go(AppRoutes.dashboard);
-      }
+      await _repo.login(_email.text.trim(), _password.text);
+      if (mounted) context.go(AppRoutes.dashboard);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login failed: $e'), backgroundColor: AppTheme.danger),
-        );
+        setState(() {
+          _error = e is AppException ? e.message : 'Login failed. Please try again.';
+        });
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -67,17 +66,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in to your DuesWise account',
+                  'Sign in to manage your dues, spending, and safe-to-spend.',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: 12),
-                if (!AppConfig.useMockApi)
-                  Text(
-                    'Live demo mode: this signs you into the selected synthetic persona. '
-                    'Any email and password are accepted — no real account is created.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.warning),
-                  ),
                 const SizedBox(height: 28),
                 Form(
                   key: _formKey,
@@ -94,8 +86,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _password,
                         obscureText: true,
                         decoration: const InputDecoration(labelText: 'Password', hintText: '••••••••'),
-                        validator: (v) => (v == null || v.length < 6) ? 'Password must be at least 6 characters' : null,
+                        validator: (v) => (v == null || v.length < 8) ? 'Password must be at least 8 characters' : null,
                       ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppTheme.danger),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
@@ -122,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Registration screen (mock behaviour).
+/// Registration screen for real accounts.
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -136,6 +136,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _email = TextEditingController();
   final _password = TextEditingController();
   bool _loading = false;
+  String? _error;
   final FinanceRepository _repo = AppRepository.instance;
 
   @override
@@ -148,20 +149,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final result = await _repo.register(_email.text.trim(), _password.text, _name.text.trim());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Account created for ${result.userId}')),
-        );
-        context.go(AppRoutes.dashboard);
-      }
+      await _repo.register(_email.text.trim(), _password.text, _name.text.trim());
+      if (mounted) context.go(AppRoutes.dashboard);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registration failed: $e'), backgroundColor: AppTheme.danger),
-        );
+        setState(() {
+          _error = e is AppException
+              ? e.message
+              : 'Could not create your account. Please try again.';
+        });
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -185,7 +186,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Join DuesWise with synthetic demo data',
+                  'Create a private account for your real dues and spending.',
+                  textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 28),
@@ -209,9 +211,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       TextFormField(
                         controller: _password,
                         obscureText: true,
-                        decoration: const InputDecoration(labelText: 'Password', hintText: '••••••••'),
-                        validator: (v) => (v == null || v.length < 6) ? 'Password must be at least 6 characters' : null,
+                        decoration: const InputDecoration(
+                          labelText: 'Password',
+                          hintText: '••••••••',
+                          helperText: 'At least 8 characters',
+                        ),
+                        validator: (v) => (v == null || v.length < 8) ? 'Password must be at least 8 characters' : null,
                       ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          _error!,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: AppTheme.danger),
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,

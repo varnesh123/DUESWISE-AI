@@ -4,7 +4,7 @@ import 'package:dueswise/app/router.dart';
 import 'package:dueswise/core/constants/app_constants.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 
-/// Welcome screen: entry point with demo/persona selection.
+/// Welcome screen: real account entry point plus an explicit demo path.
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
@@ -34,7 +34,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'AI-powered personal finance for India.\nSafe-to-spend, dues, nudges — all synthetic demo data.',
+                  'AI-powered personal finance for India.\nCreate a private account for your real dues and spending, or explore with synthetic demo data.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.onSurfaceVariant),
                   textAlign: TextAlign.center,
                 ),
@@ -69,7 +69,7 @@ class WelcomeScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Demo mode — all data is synthetic. No real banking.',
+                          'Demo mode is separate — synthetic data only. Your real account data is never used.',
                           style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppTheme.warning),
                         ),
                       ),

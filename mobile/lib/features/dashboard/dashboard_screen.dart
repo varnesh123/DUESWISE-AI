@@ -4,6 +4,7 @@ import 'package:dueswise/app/repository_provider.dart';
 import 'package:dueswise/app/router.dart';
 import 'package:dueswise/core/widgets/shared_widgets.dart';
 import 'package:dueswise/core/errors/app_exception.dart';
+import 'package:dueswise/data/models/auth_user.dart';
 import 'package:dueswise/data/models/dashboard_summary.dart';
 import 'package:dueswise/data/models/transaction.dart';
 import 'package:dueswise/data/repositories/finance_repository.dart';
@@ -20,6 +21,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final FinanceRepository _repo = AppRepository.instance;
   DashboardSummary? _summary;
   List<Transaction> _recent = [];
+  AuthUser? _user;
   bool _loading = true;
   String? _error;
 
@@ -33,10 +35,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     try {
       final summary = await _repo.getDashboardSummary();
       final txns = await _repo.getTransactions();
+      AuthUser? user;
+      try {
+        user = await _repo.getCurrentUser();
+      } catch (_) {
+        // Greeting is optional; financial data still loads.
+      }
       if (mounted) {
         setState(() {
           _summary = summary;
           _recent = txns.take(5).toList();
+          _user = user;
           _loading = false;
         });
       }
@@ -98,10 +107,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   List<Widget> _buildChildren() {
     final children = <Widget>[
-      const Text('Hello!', style: TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant)),
+      Text(
+        _user == null || _user!.name.isEmpty ? 'Hello!' : 'Hello, ${_user!.name}',
+        style: const TextStyle(fontSize: 16, color: AppTheme.onSurfaceVariant),
+      ),
       const SizedBox(height: 4),
       Text(
-        'DuesWise',
+        _user?.isDemo == true ? 'Demo dashboard' : 'Your dashboard',
         style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w800, color: AppTheme.primary),
       ),
       const SizedBox(height: 20),

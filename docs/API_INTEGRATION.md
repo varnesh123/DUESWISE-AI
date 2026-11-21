@@ -12,7 +12,9 @@ describes the running system, and the backend is the executable source of truth.
 - Base URL: `http://localhost:8000` (configurable in the app via `BACKEND_BASE_URL`).
 - All versioned endpoints live under `/api/v1`.
 - JSON only; field names are `snake_case`; money is integer paise.
-- Authentication: `Authorization: Bearer <demo token>`.
+- Authentication: `Authorization: Bearer <session token>`. Tokens come from
+  `POST /api/v1/auth/register` or `/auth/login` (real accounts), or from
+  `POST /api/v1/auth/demo` (explicit synthetic demo sessions).
 - Errors:
 
 ```json
@@ -27,12 +29,22 @@ Status → code mapping includes `400/422 → VALIDATION_ERROR`, `401 → AUTHEN
 
 | Flutter repository method | Method + path | Notes |
 |---|---|---|
-| `login` / `register` | `POST /api/v1/auth/demo` | Synthetic session for the selected persona; no passwords |
-| `getDashboardSummary` | `GET /api/v1/dashboard/summary` | Direct mapping |
+| `register` | `POST /api/v1/auth/register` | Real account; PBKDF2 password hash; returns a session token |
+| `login` | `POST /api/v1/auth/login` | Real account; generic 401 on bad credentials |
+| `loginDemo` | `POST /api/v1/auth/demo` | Explicit synthetic persona session only |
+| `logout` | `POST /api/v1/auth/logout` | Revokes the current session server-side |
+| `getCurrentUser` | `GET /api/v1/auth/me` | Account id, name, email, persona, demo flag |
+| `getDashboardSummary` | `GET /api/v1/dashboard/summary` | Direct mapping; user-scoped |
 | `getTransactions` | `GET /api/v1/transactions?category=&search=&page_size=` | Envelope key `items`; UI “query” maps to backend `search` |
+| `createTransaction` | `POST /api/v1/transactions/manual` | Manual record with validation |
+| `updateTransaction` | `PATCH /api/v1/transactions/{id}` | Partial update; ownership enforced |
+| `deleteTransaction` | `DELETE /api/v1/transactions/{id}` | Ownership enforced |
 | `ingestTransaction` | `POST /api/v1/transactions/ingest` | Unified manual/SMS entry point |
 | `getDues` | `GET /api/v1/dues` | Envelope key `items` |
 | `getDue` | `GET /api/v1/dues/{due_id}` | Added during integration |
+| `createDue` | `POST /api/v1/dues` | Title, type, amount, date, frequency, mandatory flag |
+| `updateDue` | `PATCH /api/v1/dues/{due_id}` | Partial update; ownership enforced |
+| `deleteDue` | `DELETE /api/v1/dues/{due_id}` | Ownership enforced |
 | `markDuePaid` | `POST /api/v1/dues/{due_id}/mark-paid` | Body: `{"paid_date": "YYYY-MM-DD"}` |
 | `getSubscriptions` | `GET /api/v1/subscriptions` | Envelope key `items` |
 | `confirmSubscription` | `POST /api/v1/subscriptions/{id}/confirm` | Direct |

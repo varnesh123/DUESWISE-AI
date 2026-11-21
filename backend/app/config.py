@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     MAX_FILE_SIZE_MB: int = 10
 
+    # Real account sessions (opaque bearer tokens, hashed at rest).
+    SESSION_TTL_MINUTES: int = 60 * 24 * 7
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8"
     )

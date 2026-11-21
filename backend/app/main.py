@@ -15,6 +15,7 @@ from app.utils.logging import setup_logging
 
 # Import all models so Base.metadata registers every table before create_all().
 from app.models.user import User  # noqa: F401
+from app.models.auth_session import AuthSession  # noqa: F401
 from app.models.transaction import Transaction  # noqa: F401
 from app.models.ingestion import IngestionRecord  # noqa: F401
 from app.models.due import Due  # noqa: F401

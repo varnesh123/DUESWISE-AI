@@ -8,7 +8,7 @@ from datetime import date
 from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.dependencies import DbSession, get_current_user
 from app.repositories.transaction_repository import TransactionRepository
@@ -18,6 +18,7 @@ from app.schemas.transaction import (
     TransactionItem,
     TransactionList,
     TransactionFilters,
+    TransactionUpdate,
 )
 from app.utils.dates import parse_date_iso
 from app.utils.money import validate_amount_paise
@@ -117,6 +118,94 @@ def get_transaction(
             detail="Transaction not found",
         )
     return _txn_to_item(txn)
+
+
+@router.patch(
+    "/transactions/{transaction_id}",
+    response_model=TransactionItem,
+    tags=["transactions"],
+    summary="Update a transaction",
+)
+def update_transaction(
+    transaction_id: str,
+    payload: TransactionUpdate,
+    db: DbSession,
+    current_user: User = Depends(get_current_user),
+):
+    """Partially update a user-owned transaction."""
+    repo = TransactionRepository(db)
+    txn = repo.get(transaction_id, current_user.id)
+    if txn is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transaction not found",
+        )
+
+    data = payload.model_dump(exclude_unset=True)
+    fields: dict = {}
+
+    if "amount_paise" in data and data["amount_paise"] is not None:
+        validate_amount_paise(data["amount_paise"])
+        fields["amount_paise"] = data["amount_paise"]
+
+    if "transaction_type" in data and data["transaction_type"] is not None:
+        if data["transaction_type"] not in ("credit", "debit"):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="transaction_type must be credit or debit",
+            )
+        fields["transaction_type"] = data["transaction_type"]
+
+    if "transaction_date" in data and data["transaction_date"] is not None:
+        try:
+            fields["transaction_date"] = parse_date_iso(data["transaction_date"])
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="transaction_date must be YYYY-MM-DD",
+            )
+
+    if "merchant" in data and data["merchant"] is not None:
+        merchant = data["merchant"].strip()
+        if not merchant:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="merchant cannot be empty",
+            )
+        fields["merchant_raw"] = merchant
+        fields["merchant_normalized"] = merchant
+
+    if "category" in data and data["category"] is not None:
+        fields["category"] = data["category"] or "other"
+    if "payment_method" in data and data["payment_method"] is not None:
+        fields["payment_method"] = data["payment_method"]
+    if "description" in data:
+        fields["description"] = data["description"]
+
+    updated = repo.update(transaction_id, current_user.id, **fields)
+    assert updated is not None  # existence checked above
+    return _txn_to_item(updated)
+
+
+@router.delete(
+    "/transactions/{transaction_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["transactions"],
+    summary="Delete a transaction",
+)
+def delete_transaction(
+    transaction_id: str,
+    db: DbSession,
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a user-owned transaction."""
+    repo = TransactionRepository(db)
+    if not repo.delete(transaction_id, current_user.id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Transaction not found",
+        )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

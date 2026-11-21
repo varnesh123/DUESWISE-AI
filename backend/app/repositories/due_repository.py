@@ -46,6 +46,25 @@ class DueRepository:
         items = query.order_by(Due.due_date.asc(), Due.created_at.desc()).all()
         return items, total
 
+    def update(self, due_id: str, user_id: str, **fields) -> Optional[Due]:
+        """Apply user-scoped updates and return the due (or None)."""
+        due = self.get(due_id, user_id)
+        if due is None:
+            return None
+        for key, value in fields.items():
+            setattr(due, key, value)
+        self.db.flush()
+        return due
+
+    def delete(self, due_id: str, user_id: str) -> bool:
+        """Delete a due owned by the user. Returns False if not found."""
+        due = self.get(due_id, user_id)
+        if due is None:
+            return False
+        self.db.delete(due)
+        self.db.flush()
+        return True
+
     def get_upcoming_mandatory(
         self,
         user_id: str,

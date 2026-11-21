@@ -7,6 +7,7 @@ class Due {
   final String dueType; // emi, rent, subscription, insurance, utility, other
   final int amountPaise;
   final String dueDate; // YYYY-MM-DD
+  final String frequency; // one_time, weekly, monthly, quarterly, yearly
   final String status; // upcoming, due, paid, overdue
   final bool isMandatory;
   final double? confidence;
@@ -17,6 +18,7 @@ class Due {
     required this.dueType,
     required this.amountPaise,
     required this.dueDate,
+    this.frequency = 'monthly',
     required this.status,
     this.isMandatory = true,
     this.confidence,
@@ -41,6 +43,7 @@ class Due {
       dueType: json['due_type'] as String? ?? 'other',
       amountPaise: int.tryParse(json['amount_paise']?.toString() ?? '') ?? 0,
       dueDate: json['due_date'] as String? ?? '',
+      frequency: json['frequency'] as String? ?? 'monthly',
       status: json['status'] as String? ?? 'upcoming',
       isMandatory: json['is_mandatory'] as bool? ?? true,
       confidence: json['confidence'] is num
@@ -56,6 +59,7 @@ class Due {
       'due_type': dueType,
       'amount_paise': amountPaise,
       'due_date': dueDate,
+      'frequency': frequency,
       'status': status,
       'is_mandatory': isMandatory,
       if (confidence != null) 'confidence': confidence,
@@ -68,6 +72,7 @@ class Due {
     String? dueType,
     int? amountPaise,
     String? dueDate,
+    String? frequency,
     String? status,
     bool? isMandatory,
     double? confidence,
@@ -78,6 +83,7 @@ class Due {
       dueType: dueType ?? this.dueType,
       amountPaise: amountPaise ?? this.amountPaise,
       dueDate: dueDate ?? this.dueDate,
+      frequency: frequency ?? this.frequency,
       status: status ?? this.status,
       isMandatory: isMandatory ?? this.isMandatory,
       confidence: confidence ?? this.confidence,

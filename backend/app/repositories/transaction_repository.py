@@ -29,6 +29,25 @@ class TransactionRepository:
             .first()
         )
 
+    def update(self, transaction_id: str, user_id: str, **fields) -> Optional[Transaction]:
+        """Apply user-scoped updates and return the transaction (or None)."""
+        txn = self.get(transaction_id, user_id)
+        if txn is None:
+            return None
+        for key, value in fields.items():
+            setattr(txn, key, value)
+        self.db.flush()
+        return txn
+
+    def delete(self, transaction_id: str, user_id: str) -> bool:
+        """Delete a transaction owned by the user. Returns False if not found."""
+        txn = self.get(transaction_id, user_id)
+        if txn is None:
+            return False
+        self.db.delete(txn)
+        self.db.flush()
+        return True
+
     def find_duplicate(
         self,
         user_id: str,

@@ -119,14 +119,66 @@ void main() {
     expect(dues.first.isUpcoming, isTrue);
   });
 
-  test('login uses the demo persona and parses the nested user id', () async {
-    await repo.selectPersona(DemoPersona.shopkeeper);
+  test('login uses the real account endpoint and stores the session token', () async {
+    fake.respond('POST', '/api/v1/auth/login', {
+      'user': {
+        'id': 'user-1',
+        'name': 'Asha',
+        'email': 'asha@example.com',
+        'persona': 'individual',
+        'currency': 'INR',
+        'is_demo': false,
+      },
+      'user_id': 'user-1',
+      'access_token': 'opaque-session-token',
+      'token_type': 'bearer',
+      'expires_in_minutes': 10080,
+    });
+
+    final result = await repo.login('asha@example.com', 'correct-horse');
+
+    expect(result.userId, 'user-1');
+    expect(result.accessToken, 'opaque-session-token');
+    final sent = jsonDecode(fake.lastRequest.body) as Map<String, dynamic>;
+    expect(sent['email'], 'asha@example.com');
+    expect(sent['password'], 'correct-horse');
+    expect(fake.lastRequest.url.path, '/api/v1/auth/login');
+  });
+
+  test('register creates a real account instead of a demo session', () async {
+    fake.respond('POST', '/api/v1/auth/register', {
+      'user': {
+        'id': 'user-2',
+        'name': 'New User',
+        'email': 'new@example.com',
+        'persona': 'individual',
+        'currency': 'INR',
+        'is_demo': false,
+      },
+      'user_id': 'user-2',
+      'access_token': 'new-session-token',
+      'token_type': 'bearer',
+      'expires_in_minutes': 10080,
+    });
+
+    final result = await repo.register('new@example.com', 'long-password', 'New User');
+
+    expect(result.userId, 'user-2');
+    expect(result.accessToken, 'new-session-token');
+    expect(fake.lastRequest.url.path, '/api/v1/auth/register');
+    final sent = jsonDecode(fake.lastRequest.body) as Map<String, dynamic>;
+    expect(sent['name'], 'New User');
+    expect(sent['email'], 'new@example.com');
+  });
+
+  test('demo login remains an explicit, separate endpoint', () async {
     fake.respond('POST', '/api/v1/auth/demo', {
       'user': {
         'id': '33333333-3333-4333-8333-333333333333',
         'name': 'Rajesh Kumar',
         'persona': 'shopkeeper',
         'currency': 'INR',
+        'is_demo': true,
       },
       'user_id': '33333333-3333-4333-8333-333333333333',
       'access_token': '33333333-3333-4333-8333-333333333333',
@@ -134,23 +186,11 @@ void main() {
       'expires_in_minutes': 30,
     });
 
-    final result = await repo.login('demo@example.com', 'anything');
+    final result = await repo.loginDemo(DemoPersona.shopkeeper);
 
     expect(result.userId, '33333333-3333-4333-8333-333333333333');
-    expect(result.accessToken, '33333333-3333-4333-8333-333333333333');
+    expect(fake.lastRequest.url.path, '/api/v1/auth/demo');
     expect(fake.lastRequest.body, contains('shopkeeper'));
-  });
-
-  test('register starts a demo session too (no real accounts)', () async {
-    fake.respond('POST', '/api/v1/auth/demo', {
-      'user_id': '11111111-1111-4111-8111-111111111111',
-      'access_token': '11111111-1111-4111-8111-111111111111',
-      'token_type': 'bearer',
-      'expires_in_minutes': 30,
-    });
-
-    final result = await repo.register('new@example.com', 'password', 'New User');
-    expect(result.userId, '11111111-1111-4111-8111-111111111111');
   });
 
   test('tax comparison sends backend deduction shape and maps its response', () async {
