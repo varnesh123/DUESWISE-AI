@@ -11,11 +11,22 @@ router = APIRouter()
 
 
 @router.get(
-    "/health",
+    "/",
     response_model=HealthResponse,
     tags=["health"],
     summary="Health check",
 )
 def health() -> HealthResponse:
-    """Return API process health."""
+    "Return API process health."
+    return HealthResponse(status="ok")
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    tags=["health"],
+    summary="Health check",
+)
+def health_v2() -> HealthResponse:
+    "Return API process health."
     return HealthResponse(status="ok")
